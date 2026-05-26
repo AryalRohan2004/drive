@@ -410,84 +410,84 @@ function HeroSection({
   return (
     <section
       id="hero"
-      className="relative min-h-[92vh] flex items-center justify-center overflow-hidden pt-16"
+      className="relative min-h-[92vh] flex items-center justify-center overflow-hidden pt-20 pb-16"
     >
       {/* Background gradient & pattern */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-brand-950" />
-      <div className="absolute inset-0 bg-[url('/hero_driving.png')] bg-cover bg-center opacity-20" />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent" />
+      <div className="absolute inset-0 bg-slate-900" />
+      <div className="absolute inset-0 bg-[url('/hero_driving.png')] bg-cover bg-center opacity-10 mix-blend-overlay" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-900/60 to-slate-900" />
 
-      {/* Decorative gradient orbs */}
-      <div className="absolute top-20 right-1/4 w-[500px] h-[500px] rounded-full bg-brand-500/10 blur-3xl" />
-      <div className="absolute bottom-20 left-1/4 w-[400px] h-[400px] rounded-full bg-brand-400/8 blur-3xl" />
+      {/* Decorative gradient orbs with blob animation */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-500/15 rounded-full blur-[100px] mix-blend-screen animate-blob" />
+      <div className="absolute bottom-0 left-[-10%] w-[500px] h-[500px] bg-brand-400/20 rounded-full blur-[120px] mix-blend-screen animate-blob animation-delay-2000" />
+      <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] bg-indigo-500/15 rounded-full blur-[90px] mix-blend-screen animate-blob animation-delay-4000" />
 
       {/* Content */}
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 text-center">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 text-center mt-10">
         {/* Badge */}
-        <div className="animate-fade-in-up inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full bg-white/10 border border-white/15 text-sm text-brand-300 font-medium backdrop-blur-md">
-          <SparklesIcon className="w-4 h-4" />
-          <span>Trusted by 50,000+ learner drivers</span>
+        <div className="animate-fade-in-up inline-flex items-center gap-2 px-5 py-2 mb-8 rounded-full bg-white/5 border border-white/10 text-sm text-brand-300 font-medium backdrop-blur-xl shadow-lg hover:bg-white/10 transition-colors cursor-default">
+          <SparklesIcon className="w-4 h-4 text-brand-400" />
+          <span className="tracking-wide">Trusted by 50,000+ learner drivers</span>
         </div>
 
         {/* Headline */}
         <h1
-          className="animate-fade-in-up font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.08] tracking-tight mb-6"
+          className="animate-fade-in-up font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-white leading-[1.05] tracking-tight mb-8 drop-shadow-2xl"
           style={{ animationDelay: "0.1s" }}
         >
-          Find and Book the{" "}
-          <span className="bg-gradient-to-r from-brand-300 via-brand-400 to-brand-300 bg-clip-text text-transparent">
-            Perfect Driving Instructor
-          </span>{" "}
-          Near You
+          Book Your{" "}
+          <span className="relative inline-block text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-brand-400 to-teal-200 animate-pulse-glow-text">
+            Perfect Instructor
+          </span>
+          <br className="hidden md:block" /> In Seconds.
         </h1>
 
         {/* Subheadline */}
         <p
-          className="animate-fade-in-up max-w-2xl mx-auto text-lg sm:text-xl text-slate-300 mb-10 leading-relaxed"
+          className="animate-fade-in-up max-w-2xl mx-auto text-lg sm:text-xl text-slate-300 mb-12 leading-relaxed font-medium"
           style={{ animationDelay: "0.2s" }}
         >
-          Compare vetted instructors, book instantly, and pass your test with
-          confidence. Your road to freedom starts here.
+          Compare vetted driving professionals, check real reviews, and secure your lesson instantly. Your road to freedom starts here.
         </p>
 
         {/* ===== SEARCH BAR — The Core Action ===== */}
         <div
           className="animate-fade-in-up"
-          style={{ animationDelay: "0.35s" }}
+          style={{ animationDelay: "0.3s" }}
         >
           <form
             onSubmit={onSearchSubmit}
             id="hero-search-form"
-            className="max-w-3xl mx-auto bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/20 p-2 sm:p-2.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
+            className="max-w-3xl mx-auto glass-dark rounded-3xl p-3 sm:p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 ring-1 ring-white/10 focus-within:ring-brand-400/50 focus-within:shadow-[0_0_40px_-10px_rgba(45,212,191,0.3)] transition-all duration-500"
           >
             {/* Location Input */}
-            <div className="flex-1 flex items-center gap-3 px-4 py-3 sm:py-0">
-              <MapPinIcon className="w-5 h-5 text-brand-500 shrink-0" />
+            <div className="flex-1 flex items-center gap-3 px-5 py-4 sm:py-0">
+              <MapPinIcon className="w-6 h-6 text-brand-400 shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={onSearchChange}
                 placeholder="Enter suburb or postcode..."
-                className="w-full bg-transparent text-slate-800 placeholder:text-slate-400 text-base font-medium outline-none"
+                className="w-full bg-transparent text-white placeholder:text-slate-400 text-lg font-medium outline-none"
                 id="hero-search-input"
               />
             </div>
 
             {/* Divider (desktop only) */}
-            <div className="hidden sm:block w-px h-10 bg-slate-200" />
+            <div className="hidden sm:block w-px h-12 bg-white/10" />
 
             {/* Transmission Toggle */}
-            <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 mx-2 sm:mx-0">
+            <div className="flex items-center gap-1 bg-white/5 rounded-2xl p-1.5 mx-2 sm:mx-0">
               {["Auto", "Manual"].map((type) => (
                 <button
                   type="button"
                   key={type}
                   onClick={() => onTransmissionChange(type)}
                   id={`transmission-${type.toLowerCase()}-btn`}
-                  className={`px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                  className={`px-6 py-3 text-sm font-bold rounded-xl transition-all duration-300 cursor-pointer whitespace-nowrap ${
                     transmissionFilter === type
-                      ? "bg-white text-brand-600 shadow-md shadow-brand-500/10"
-                      : "text-slate-500 hover:text-slate-700"
+                      ? "bg-white text-slate-900 shadow-lg scale-105"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
                   }`}
                 >
                   {type}
@@ -499,17 +499,17 @@ function HeroSection({
             <button
               type="submit"
               id="hero-search-btn"
-              className="flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white font-semibold text-sm rounded-xl shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer whitespace-nowrap"
+              className="flex items-center justify-center gap-2 px-8 py-4 bg-brand-500 hover:bg-brand-400 text-white font-bold text-base rounded-2xl shadow-[0_0_20px_rgba(20,184,166,0.4)] hover:shadow-[0_0_30px_rgba(20,184,166,0.6)] transition-all duration-300 hover:-translate-y-1 active:translate-y-0 active:scale-95 cursor-pointer whitespace-nowrap"
             >
               <SearchIcon className="w-5 h-5" />
-              <span>Search Instructors</span>
+              <span>Search</span>
             </button>
           </form>
         </div>
 
         {/* Social Proof Stats */}
         <div
-          className="animate-fade-in-up mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 sm:gap-x-12"
+          className="animate-fade-in-up mt-16 flex flex-wrap items-center justify-center gap-x-12 gap-y-8 sm:gap-x-16"
           style={{ animationDelay: "0.5s" }}
         >
           {[
@@ -518,16 +518,16 @@ function HeroSection({
             { value: "4.8★", label: "Average Rating" },
             { value: "92%", label: "First-Time Pass Rate" },
           ].map((stat) => (
-            <div key={stat.label} className="text-center">
-              <div className="text-xl sm:text-2xl font-bold text-white">{stat.value}</div>
-              <div className="text-xs sm:text-sm text-slate-400 font-medium">{stat.label}</div>
+            <div key={stat.label} className="text-center group">
+              <div className="text-2xl sm:text-3xl font-black text-white group-hover:text-brand-300 transition-colors duration-300">{stat.value}</div>
+              <div className="text-sm sm:text-base text-slate-400 font-medium mt-1">{stat.label}</div>
             </div>
           ))}
         </div>
       </div>
 
       {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-50 to-transparent" />
     </section>
   );
 }
@@ -616,106 +616,97 @@ function HowItWorksSection() {
 function InstructorCard({ instructor, onViewProfile, onBookNow }) {
   return (
     <div
-      className="group relative bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-brand-500/10 transition-all duration-500 hover:-translate-y-2"
+      className="group relative bg-white rounded-[24px] border border-slate-200/60 overflow-hidden shadow-premium-sm hover:shadow-premium transition-all duration-500 hover:-translate-y-2 flex flex-col h-full"
       id={`instructor-card-${instructor.id}`}
     >
       {/* Image Container */}
-      <div className="relative h-56 sm:h-60 overflow-hidden">
+      <div className="relative h-64 sm:h-72 overflow-hidden">
         <img
           src={instructor.photo}
           alt={`${instructor.name} — Driving Instructor`}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        {/* Gradient overlay at bottom of image */}
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/40 to-transparent" />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-80" />
 
-        {/* Verified Badge (over image) */}
-        {instructor.isVerified && (
-          <div className="absolute top-3 right-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-success-500/90 backdrop-blur-md text-white text-xs font-semibold shadow-lg">
-            <CheckBadgeIcon className="w-3.5 h-3.5" />
-            Verified
+        {/* Badges Top */}
+        <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
+          {instructor.isVerified && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-md text-slate-900 text-xs font-bold shadow-lg">
+              <CheckBadgeIcon className="w-4 h-4 text-brand-500" />
+              Verified
+            </div>
+          )}
+          {/* Rate Badge */}
+          <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/10 text-white shadow-lg">
+            <span className="text-sm font-bold">${instructor.hourlyRate}</span>
+            <span className="text-xs text-slate-300 ml-1 font-medium">/hr</span>
           </div>
-        )}
-
-        {/* Rate Badge (over image, bottom left) */}
-        <div className="absolute bottom-3 left-3 inline-flex items-center px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md shadow-lg">
-          <span className="text-lg font-bold text-slate-900">${instructor.hourlyRate}</span>
-          <span className="text-sm text-slate-500 ml-1">/hr</span>
         </div>
       </div>
 
-      {/* Card Body */}
-      <div className="p-5 sm:p-6">
+      {/* Card Body - Shifted up to overlap image */}
+      <div className="relative flex-1 p-6 pt-8 -mt-6 bg-white rounded-t-[24px]">
+        {/* Rating Floating Pill */}
+        <div className="absolute -top-5 right-6 flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-400 text-amber-950 font-bold text-sm shadow-lg shadow-amber-400/30 ring-4 ring-white">
+          <StarIcon className="w-4 h-4 text-amber-950" />
+          {instructor.rating}
+          <span className="text-amber-900/80 text-xs font-semibold ml-0.5">({instructor.reviewCount})</span>
+        </div>
+
         {/* Name & Location */}
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h3 className="font-display text-lg font-bold text-slate-900 group-hover:text-brand-600 transition-colors">
-              {instructor.name}
-            </h3>
-            <div className="flex items-center gap-1 text-sm text-slate-500 mt-0.5">
-              <MapPinIcon className="w-3.5 h-3.5" />
-              {instructor.suburb}
-            </div>
-          </div>
-          {/* Rating */}
-          <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50">
-            <StarIcon className="w-4 h-4 text-amber-400" />
-            <span className="text-sm font-bold text-slate-800">{instructor.rating}</span>
-            <span className="text-xs text-slate-400">({instructor.reviewCount})</span>
+        <div className="mb-4">
+          <h3 className="font-display text-xl font-bold text-slate-900 group-hover:text-brand-600 transition-colors line-clamp-1">
+            {instructor.name}
+          </h3>
+          <div className="flex items-center gap-1.5 text-sm text-slate-500 mt-1 font-medium">
+            <MapPinIcon className="w-4 h-4 text-slate-400" />
+            {instructor.suburb}
           </div>
         </div>
 
-        {/* Car & Details */}
-        <div className="flex flex-wrap items-center gap-2 mb-5">
-          {/* Transmission Pill */}
+        {/* Tags */}
+        <div className="flex flex-wrap items-center gap-2 mb-6">
           <span
-            className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold ${
+            className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold tracking-wide uppercase ${
               instructor.transmission === "Auto"
-                ? "bg-blue-50 text-blue-600"
-                : "bg-purple-50 text-purple-600"
+                ? "bg-blue-50 text-blue-600 ring-1 ring-blue-100"
+                : "bg-purple-50 text-purple-600 ring-1 ring-purple-100"
             }`}
           >
             {instructor.transmission}
           </span>
-
-          {/* Car Model */}
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 text-xs font-medium text-slate-600">
-            <CarIcon className="w-3.5 h-3.5" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-50 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
+            <CarIcon className="w-3.5 h-3.5 text-slate-400" />
             {instructor.car}
           </span>
         </div>
 
-        {/* Pass Rate & Experience */}
-        <div className="flex items-center justify-between mb-5 p-3 rounded-xl bg-slate-50/70 border border-slate-100">
-          <div className="text-center">
-            <div className="text-lg font-bold text-brand-600">{instructor.passRate}%</div>
-            <div className="text-[11px] text-slate-400 font-medium">Pass Rate</div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="bg-slate-50 rounded-xl p-3 text-center ring-1 ring-slate-100">
+            <div className="text-lg font-black text-brand-600">{instructor.passRate}%</div>
+            <div className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Pass Rate</div>
           </div>
-          <div className="w-px h-8 bg-slate-200" />
-          <div className="text-center">
-            <div className="text-lg font-bold text-slate-700">{instructor.yearsExperience}+</div>
-            <div className="text-[11px] text-slate-400 font-medium">Years Exp.</div>
-          </div>
-          <div className="w-px h-8 bg-slate-200" />
-          <div className="text-center">
-            <div className="text-lg font-bold text-slate-700">{instructor.reviewCount}</div>
-            <div className="text-[11px] text-slate-400 font-medium">Reviews</div>
+          <div className="bg-slate-50 rounded-xl p-3 text-center ring-1 ring-slate-100">
+            <div className="text-lg font-black text-slate-700">{instructor.yearsExperience}+</div>
+            <div className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Years Exp</div>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-2">
+        {/* Spacer to push buttons to bottom if needed */}
+        <div className="mt-auto flex gap-3">
           <button
             onClick={() => onViewProfile(instructor.id)}
             id={`view-profile-${instructor.id}`}
-            className="flex-1 px-4 py-2.5 text-sm font-semibold text-brand-600 border border-brand-200 rounded-xl hover:bg-brand-50 transition-all duration-200 cursor-pointer"
+            className="flex-1 px-4 py-3 text-sm font-bold text-slate-700 bg-white border-2 border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all duration-200 cursor-pointer"
           >
-            View Profile
+            Profile
           </button>
           <button
             onClick={() => onBookNow(instructor.id)}
             id={`book-now-${instructor.id}`}
-            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 rounded-xl shadow-md shadow-brand-500/20 hover:shadow-brand-500/40 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
+            className="flex-[1.5] flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-white bg-slate-900 hover:bg-brand-600 rounded-xl shadow-md hover:shadow-xl hover:shadow-brand-500/20 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
           >
             Book Now
             <ArrowRightIcon className="w-4 h-4" />
@@ -1410,10 +1401,12 @@ function InstructorProfilePage() {
   return (
     <div className="min-h-screen bg-white pt-20 pb-16">
       {/* Profile Header (Hero) */}
-      <div className="relative h-64 sm:h-80 bg-slate-900">
+      <div className="relative h-64 sm:h-80 bg-slate-900 overflow-hidden">
         <div className="absolute inset-0 bg-[url('/hero_driving.png')] bg-cover bg-center opacity-30" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent" />
-        <button onClick={() => navigate(-1)} className="absolute top-6 left-4 sm:left-8 inline-flex items-center gap-2 text-sm font-semibold text-white/80 hover:text-white transition-colors bg-black/20 backdrop-blur-md px-4 py-2 rounded-xl">
+        <div className="absolute top-10 left-1/4 w-96 h-96 bg-brand-500/30 rounded-full blur-3xl animate-blob" />
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl animate-blob animation-delay-2000" />
+        <button onClick={() => navigate(-1)} className="absolute top-6 left-4 sm:left-8 inline-flex items-center gap-2 text-sm font-semibold text-white/80 hover:text-white transition-colors bg-black/20 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 hover:bg-black/40">
           <ArrowRightIcon className="w-4 h-4 rotate-180" /> Back
         </button>
       </div>
@@ -1814,6 +1807,8 @@ function InstructorLandingPage() {
       <section className="relative py-24 sm:py-32 bg-slate-900 overflow-hidden">
         <div className="absolute inset-0 bg-[url('/hero_driving.png')] bg-cover bg-center opacity-20" />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/80 to-transparent" />
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-brand-500/20 rounded-full blur-3xl animate-blob" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-brand-300/10 rounded-full blur-3xl animate-blob animation-delay-4000" />
         
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
