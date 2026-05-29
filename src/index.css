@@ -284,7 +284,6 @@ body {
 /* ---------- Card hover glow effect ---------- */
 .card-glow {
   position: relative;
-  overflow: hidden;
 }
 
 .card-glow::before {

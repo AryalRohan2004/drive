@@ -2207,6 +2207,435 @@ function InstructorApplyPage() {
   );
 }
 
+/**
+ * HowItWorksPage
+ * Detailed guide for learners and instructors.
+ */
+function HowItWorksPage() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-slate-950 pt-24 pb-20 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto">
+        <button onClick={() => navigate(-1)} className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-400 transition-colors cursor-pointer">
+          <ArrowRightIcon className="w-4 h-4 rotate-180" /> Back
+        </button>
+        <div className="text-center mb-16">
+          <h1 className="text-4xl sm:text-5xl font-display font-black text-white mb-6">How DriveMate Works</h1>
+          <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+            Whether you're looking to learn how to drive safely, or you're an instructor looking to grow your business, we've made the process seamless.
+          </p>
+        </div>
+        
+        <div className="space-y-20">
+          {/* For Learners */}
+          <div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-sm font-bold uppercase tracking-widest">
+              <UserIcon className="w-4 h-4" /> For Learners
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+              {[
+                { step: "01", title: "Search & Compare", desc: "Enter your suburb and find verified instructors near you. Compare prices, ratings, and vehicle types." },
+                { step: "02", title: "Book Online", desc: "Choose a time that fits your schedule and securely pay for your lesson upfront. No cash needed." },
+                { step: "03", title: "Get Driving", desc: "Your instructor will pick you up. Enjoy your lesson, track your progress, and leave a review!" }
+              ].map(s => (
+                <div key={s.step} className="bg-slate-900/80 p-8 rounded-2xl border border-white/5 relative">
+                  <div className="text-5xl font-black text-white/5 absolute top-4 right-4 font-display">{s.step}</div>
+                  <h3 className="text-xl font-bold text-white mb-3 font-display relative z-10">{s.title}</h3>
+                  <p className="text-slate-400 relative z-10 leading-relaxed">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* For Instructors */}
+          <div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-bold uppercase tracking-widest">
+              <SteeringWheelIcon className="w-4 h-4" /> For Instructors
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+              {[
+                { step: "01", title: "Create Profile", desc: "Sign up, upload your credentials, and set your own hourly rates, service areas, and availability." },
+                { step: "02", title: "Receive Bookings", desc: "Get notified instantly when learners book your time slots. We handle the marketing and scheduling." },
+                { step: "03", title: "Get Paid Fast", desc: "Payments are processed securely. Focus on teaching and watch your earnings grow with guaranteed payouts." }
+              ].map(s => (
+                <div key={s.step} className="bg-slate-900/80 p-8 rounded-2xl border border-white/5 relative">
+                  <div className="text-5xl font-black text-white/5 absolute top-4 right-4 font-display">{s.step}</div>
+                  <h3 className="text-xl font-bold text-white mb-3 font-display relative z-10">{s.title}</h3>
+                  <p className="text-slate-400 relative z-10 leading-relaxed">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * PricingPage
+ * Transparent pricing for both sides.
+ */
+function PricingPage() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-slate-950 pt-24 pb-20 px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto">
+        <button onClick={() => navigate(-1)} className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-400 transition-colors cursor-pointer">
+          <ArrowRightIcon className="w-4 h-4 rotate-180" /> Back
+        </button>
+        <div className="text-center mb-16">
+          <h1 className="text-4xl sm:text-5xl font-display font-black text-white mb-6">Simple, Transparent Pricing</h1>
+          <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+            No hidden fees. No surprises. Just straightforward pricing for learners and low fees for instructors.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+          {/* Learner Pricing */}
+          <div className="card-glow bg-slate-900/80 p-8 sm:p-12 rounded-3xl border border-white/5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl" />
+            <h2 className="text-2xl font-display font-black text-white mb-2">For Learners</h2>
+            <p className="text-slate-400 mb-8">Pay only for the lessons you book.</p>
+            
+            <div className="mb-8">
+              <span className="text-5xl font-black text-white font-display">Free</span>
+              <span className="text-slate-500 font-medium ml-2">to use</span>
+            </div>
+            
+            <ul className="space-y-4 mb-10">
+              <li className="flex items-center gap-3 text-slate-300">
+                <CheckBadgeIcon className="w-5 h-5 text-brand-400" /> Browse & compare instructors for free
+              </li>
+              <li className="flex items-center gap-3 text-slate-300">
+                <CheckBadgeIcon className="w-5 h-5 text-brand-400" /> Instructor sets the hourly rate (Avg. $60-$80)
+              </li>
+              <li className="flex items-center gap-3 text-slate-300">
+                <CheckBadgeIcon className="w-5 h-5 text-brand-400" /> Small $5 booking fee per transaction
+              </li>
+              <li className="flex items-center gap-3 text-slate-300">
+                <CheckBadgeIcon className="w-5 h-5 text-brand-400" /> Free cancellation up to 48 hours before
+              </li>
+            </ul>
+            <Link to="/learners" className="block w-full py-4 text-center text-white font-bold bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-colors">
+              Find an Instructor
+            </Link>
+          </div>
+
+          {/* Instructor Pricing */}
+          <div className="card-glow bg-slate-900/80 p-8 sm:p-12 rounded-3xl border border-brand-500/30 relative overflow-hidden shadow-2xl shadow-brand-500/10">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl" />
+            <div className="absolute top-0 right-8 bg-brand-600 text-white text-xs font-bold px-3 py-1 rounded-b-lg uppercase tracking-wider">Most Popular</div>
+            
+            <h2 className="text-2xl font-display font-black text-white mb-2">For Instructors</h2>
+            <p className="text-slate-400 mb-8">Keep what you earn. Grow your business.</p>
+            
+            <div className="mb-8">
+              <span className="text-5xl font-black text-white font-display">10%</span>
+              <span className="text-slate-500 font-medium ml-2">platform fee</span>
+            </div>
+            
+            <ul className="space-y-4 mb-10">
+              <li className="flex items-center gap-3 text-slate-300">
+                <CheckBadgeIcon className="w-5 h-5 text-amber-400" /> You keep 90% of your set hourly rate
+              </li>
+              <li className="flex items-center gap-3 text-slate-300">
+                <CheckBadgeIcon className="w-5 h-5 text-amber-400" /> Free profile listing & marketing
+              </li>
+              <li className="flex items-center gap-3 text-slate-300">
+                <CheckBadgeIcon className="w-5 h-5 text-amber-400" /> Automated booking & calendar management
+              </li>
+              <li className="flex items-center gap-3 text-slate-300">
+                <CheckBadgeIcon className="w-5 h-5 text-amber-400" /> Guaranteed payment protection
+              </li>
+            </ul>
+            <Link to="/instructors/apply" className="block w-full py-4 text-center text-white font-bold bg-brand-600 hover:bg-brand-500 rounded-xl shadow-lg shadow-brand-500/20 transition-all hover:-translate-y-0.5">
+              Apply to Teach
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * EnterprisePage
+ * For driving schools with multiple instructors.
+ */
+function EnterprisePage() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-slate-950 pt-24 pb-20 px-4 sm:px-6 relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute top-0 left-0 w-full h-full">
+        <img src="/hero_automotive.png" alt="" className="w-full h-full object-cover opacity-10 mix-blend-luminosity" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/95 to-slate-950" />
+      </div>
+
+      <div className="max-w-5xl mx-auto relative z-10">
+        <button onClick={() => navigate(-1)} className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-400 transition-colors cursor-pointer">
+          <ArrowRightIcon className="w-4 h-4 rotate-180" /> Back
+        </button>
+        
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-white/5 border border-white/10 text-white text-sm font-bold uppercase tracking-widest">
+            DriveMate Enterprise
+          </div>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-black text-white mb-6">Scale Your Driving School</h1>
+          <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            Manage your entire fleet, dispatch instructors, and streamline your operations with our enterprise-grade management software.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+          <div className="bg-slate-900/80 p-8 rounded-3xl border border-white/5 backdrop-blur-md">
+            <ShieldIcon className="w-10 h-10 text-brand-400 mb-6" />
+            <h3 className="text-2xl font-bold text-white mb-3 font-display">Fleet Management</h3>
+            <p className="text-slate-400 leading-relaxed">Assign vehicles to instructors, track maintenance schedules, and monitor dual-control compliance all from a single dashboard.</p>
+          </div>
+          <div className="bg-slate-900/80 p-8 rounded-3xl border border-white/5 backdrop-blur-md">
+            <UserIcon className="w-10 h-10 text-brand-400 mb-6" />
+            <h3 className="text-2xl font-bold text-white mb-3 font-display">Instructor Dispatch</h3>
+            <p className="text-slate-400 leading-relaxed">Centralized calendar to assign student bookings to your instructors based on location, availability, and transmission type.</p>
+          </div>
+          <div className="bg-slate-900/80 p-8 rounded-3xl border border-white/5 backdrop-blur-md">
+            <StarIcon className="w-10 h-10 text-brand-400 mb-6" />
+            <h3 className="text-2xl font-bold text-white mb-3 font-display">School Branding</h3>
+            <p className="text-slate-400 leading-relaxed">Maintain your driving school's identity. Instructors appear under your agency badge, helping build local reputation.</p>
+          </div>
+          <div className="bg-slate-900/80 p-8 rounded-3xl border border-white/5 backdrop-blur-md">
+            <LockIcon className="w-10 h-10 text-brand-400 mb-6" />
+            <h3 className="text-2xl font-bold text-white mb-3 font-display">Automated Payroll</h3>
+            <p className="text-slate-400 leading-relaxed">Split payments automatically. Set commission rates per instructor and let our system handle the payouts instantly.</p>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-brand-900/50 to-slate-900 border border-brand-500/20 rounded-3xl p-10 text-center">
+          <h2 className="text-3xl font-display font-black text-white mb-4">Ready to upgrade your school?</h2>
+          <p className="text-slate-400 mb-8 max-w-xl mx-auto">Get in touch with our partnerships team to discuss custom pricing and schedule a demo of our enterprise dashboard.</p>
+          <button className="px-8 py-4 bg-white text-slate-900 font-black rounded-xl hover:bg-slate-200 transition-colors uppercase tracking-wider">
+            Contact Sales
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Support Pages
+ */
+function HelpCentrePage() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-slate-950 pt-24 pb-20 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto">
+        <button onClick={() => navigate(-1)} className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-400 transition-colors cursor-pointer">
+          <ArrowRightIcon className="w-4 h-4 rotate-180" /> Back
+        </button>
+        <div className="text-center mb-12">
+          <h1 className="text-4xl sm:text-5xl font-display font-black text-white mb-6">How can we help?</h1>
+          <div className="relative max-w-xl mx-auto">
+            <SearchIcon className="absolute left-4 top-3.5 w-5 h-5 text-slate-500" />
+            <input type="text" placeholder="Search for articles..." className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-600 focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {['Getting Started', 'Account & Profile', 'Payments & Refunds', 'Safety & Trust'].map(topic => (
+            <div key={topic} className="p-6 bg-slate-900/80 rounded-2xl border border-white/5 hover:border-brand-500/30 transition-colors cursor-pointer">
+              <h3 className="text-xl font-bold text-white mb-2">{topic}</h3>
+              <p className="text-slate-400 text-sm">Find answers about {topic.toLowerCase()} on DriveMate.</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContactUsPage() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-slate-950 pt-24 pb-20 px-4 sm:px-6">
+      <div className="max-w-3xl mx-auto">
+        <button onClick={() => navigate(-1)} className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-400 transition-colors cursor-pointer">
+          <ArrowRightIcon className="w-4 h-4 rotate-180" /> Back
+        </button>
+        <h1 className="text-4xl sm:text-5xl font-display font-black text-white mb-6">Contact Us</h1>
+        <p className="text-lg text-slate-400 mb-10">We're here to help. Send us a message and we'll respond within 24 hours.</p>
+        <form className="space-y-6 bg-slate-900/80 p-8 rounded-3xl border border-white/5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-1">Name</label>
+              <input type="text" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white outline-none focus:border-brand-500/50" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-1">Email</label>
+              <input type="email" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white outline-none focus:border-brand-500/50" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-400 mb-1">Message</label>
+            <textarea rows="5" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white outline-none focus:border-brand-500/50"></textarea>
+          </div>
+          <button type="button" className="w-full py-4 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl transition-all cursor-pointer">Send Message</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function FAQPage() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-slate-950 pt-24 pb-20 px-4 sm:px-6">
+      <div className="max-w-3xl mx-auto">
+        <button onClick={() => navigate(-1)} className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-400 transition-colors cursor-pointer">
+          <ArrowRightIcon className="w-4 h-4 rotate-180" /> Back
+        </button>
+        <h1 className="text-4xl sm:text-5xl font-display font-black text-white mb-10">Frequently Asked Questions</h1>
+        <div className="space-y-4">
+          {[
+            { q: "How do I book a lesson?", a: "Search for instructors in your area, select an available time, and securely pay online." },
+            { q: "Can I cancel my booking?", a: "Yes, you can cancel for a full refund up to 48 hours before the lesson begins." },
+            { q: "Are all instructors verified?", a: "Absolutely. Every instructor on DriveMate undergoes rigorous background checks and licence verification." }
+          ].map((faq, i) => (
+            <div key={i} className="p-6 bg-slate-900/80 rounded-2xl border border-white/5">
+              <h3 className="text-lg font-bold text-white mb-2">{faq.q}</h3>
+              <p className="text-slate-400">{faq.a}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SafetyPage() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-slate-950 pt-24 pb-20 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto text-center">
+        <button onClick={() => navigate(-1)} className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-400 transition-colors cursor-pointer">
+          <ArrowRightIcon className="w-4 h-4 rotate-180" /> Back
+        </button>
+        <ShieldIcon className="w-16 h-16 text-brand-400 mx-auto mb-6" />
+        <h1 className="text-4xl sm:text-5xl font-display font-black text-white mb-6">Trust & Safety</h1>
+        <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-16">
+          Your safety is our top priority. We maintain the highest standards for all instructors on our platform.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-left">
+          <div className="p-6 bg-slate-900/80 rounded-2xl border border-white/5">
+            <h3 className="text-xl font-bold text-white mb-3">Verified Backgrounds</h3>
+            <p className="text-slate-400">All instructors pass national police checks and hold valid Working With Children Checks.</p>
+          </div>
+          <div className="p-6 bg-slate-900/80 rounded-2xl border border-white/5">
+            <h3 className="text-xl font-bold text-white mb-3">Dual Controls</h3>
+            <p className="text-slate-400">We verify that instructor vehicles are fitted with approved dual controls for maximum safety.</p>
+          </div>
+          <div className="p-6 bg-slate-900/80 rounded-2xl border border-white/5">
+            <h3 className="text-xl font-bold text-white mb-3">Secure Payments</h3>
+            <p className="text-slate-400">Payments are processed securely via Stripe with 256-bit encryption. No cash handling needed.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Legal Pages
+ */
+function TermsOfServicePage() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-slate-950 pt-24 pb-20 px-4 sm:px-6">
+      <div className="max-w-3xl mx-auto">
+        <button onClick={() => navigate(-1)} className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-400 transition-colors cursor-pointer">
+          <ArrowRightIcon className="w-4 h-4 rotate-180" /> Back
+        </button>
+        <div className="bg-slate-900/80 p-8 sm:p-12 rounded-3xl border border-white/5">
+          <h1 className="text-3xl font-display font-black text-white mb-6">Terms of Service</h1>
+          <div className="prose prose-invert max-w-none text-slate-400 space-y-4">
+            <p>Last updated: October 2026</p>
+            <h2 className="text-white text-xl font-bold mt-8">1. Acceptance of Terms</h2>
+            <p>By accessing and using DriveMate, you accept and agree to be bound by the terms and provision of this agreement.</p>
+            <h2 className="text-white text-xl font-bold mt-8">2. User Responsibilities</h2>
+            <p>You must provide accurate information when creating an account. Instructors must maintain valid driving instructor licences at all times.</p>
+            <h2 className="text-white text-xl font-bold mt-8">3. Payments and Refunds</h2>
+            <p>All payments are processed securely. Cancellations made more than 48 hours in advance are eligible for a full refund.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PrivacyPolicyPage() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-slate-950 pt-24 pb-20 px-4 sm:px-6">
+      <div className="max-w-3xl mx-auto">
+        <button onClick={() => navigate(-1)} className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-400 transition-colors cursor-pointer">
+          <ArrowRightIcon className="w-4 h-4 rotate-180" /> Back
+        </button>
+        <div className="bg-slate-900/80 p-8 sm:p-12 rounded-3xl border border-white/5">
+          <h1 className="text-3xl font-display font-black text-white mb-6">Privacy Policy</h1>
+          <div className="prose prose-invert max-w-none text-slate-400 space-y-4">
+            <p>Last updated: October 2026</p>
+            <h2 className="text-white text-xl font-bold mt-8">Information We Collect</h2>
+            <p>We collect personal information that you provide to us, such as name, address, contact information, and payment details.</p>
+            <h2 className="text-white text-xl font-bold mt-8">How We Use Information</h2>
+            <p>We use your information to facilitate bookings between learners and instructors, process payments, and improve our services.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CookiePolicyPage() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-slate-950 pt-24 pb-20 px-4 sm:px-6">
+      <div className="max-w-3xl mx-auto">
+        <button onClick={() => navigate(-1)} className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-400 transition-colors cursor-pointer">
+          <ArrowRightIcon className="w-4 h-4 rotate-180" /> Back
+        </button>
+        <div className="bg-slate-900/80 p-8 sm:p-12 rounded-3xl border border-white/5">
+          <h1 className="text-3xl font-display font-black text-white mb-6">Cookie Policy</h1>
+          <div className="prose prose-invert max-w-none text-slate-400 space-y-4">
+            <p>Last updated: October 2026</p>
+            <p>We use cookies and similar tracking technologies to track the activity on our platform and store certain information.</p>
+            <p>Cookies are files with a small amount of data which may include an anonymous unique identifier. You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AccessibilityPage() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-slate-950 pt-24 pb-20 px-4 sm:px-6">
+      <div className="max-w-3xl mx-auto">
+        <button onClick={() => navigate(-1)} className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-brand-400 transition-colors cursor-pointer">
+          <ArrowRightIcon className="w-4 h-4 rotate-180" /> Back
+        </button>
+        <div className="bg-slate-900/80 p-8 sm:p-12 rounded-3xl border border-white/5">
+          <h1 className="text-3xl font-display font-black text-white mb-6">Accessibility Statement</h1>
+          <div className="prose prose-invert max-w-none text-slate-400 space-y-4">
+            <p>DriveMate is committed to ensuring digital accessibility for people with disabilities. We are continually improving the user experience for everyone, and applying the relevant accessibility standards.</p>
+            <p>We welcome your feedback on the accessibility of DriveMate. Please let us know if you encounter accessibility barriers on our platform.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ============================================
    MAIN APP COMPONENT
    ============================================ */
@@ -2346,6 +2775,17 @@ export default function App() {
           <Route path="/instructors/apply" element={<InstructorApplyPage />} />
           <Route path="/instructor/:id" element={<InstructorProfilePage />} />
           <Route path="/checkout/:id" element={<CheckoutPage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/enterprise" element={<EnterprisePage />} />
+          <Route path="/help" element={<HelpCentrePage />} />
+          <Route path="/contact" element={<ContactUsPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/safety" element={<SafetyPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/cookies" element={<CookiePolicyPage />} />
+          <Route path="/accessibility" element={<AccessibilityPage />} />
           <Route path="*" element={<PlaceholderPage />} />
         </Routes>
       </main>
