@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, Routes, Route, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useScrollReveal, useTilt, useRipple, useToast } from "./hooks/useInteractive";
+import { ToastProvider, ScrollReveal, AnimatedCounter, ParticleCursor, MagneticButton, GlowCursor } from "./components/InteractiveUI";
 
 /* ============================================
    MOCK DATA — Backend Developer: Replace these
@@ -121,6 +123,7 @@ const TRUST_FEATURES = [
 const NAV_LINKS = [
   { label: "For Learners", href: "/learners" },
   { label: "For Instructors", href: "/instructors" },
+  { label: "My Progress", href: "/progress" },
   { label: "Help", href: "/help" },
 ];
 
@@ -144,6 +147,140 @@ const FOOTER_LINKS = {
     { label: "Cookie Policy", href: "/cookies" },
     { label: "Accessibility", href: "/accessibility" },
   ],
+};
+
+// --- Driving Curriculum (all topics a learner needs to master) ---
+const DRIVING_CURRICULUM = [
+  {
+    id: "basics",
+    title: "Vehicle Basics",
+    icon: "car",
+    topics: [
+      { id: "b1", title: "Cockpit drill & seat adjustment" },
+      { id: "b2", title: "Mirrors, seatbelt & head restraint" },
+      { id: "b3", title: "Dashboard controls & indicators" },
+      { id: "b4", title: "Starting & stopping the engine" },
+      { id: "b5", title: "Steering technique (push-pull)" },
+      { id: "b6", title: "Clutch control & biting point" },
+    ],
+  },
+  {
+    id: "slow-speed",
+    title: "Slow Speed Manoeuvres",
+    icon: "speed",
+    topics: [
+      { id: "s1", title: "Moving off on flat ground" },
+      { id: "s2", title: "Moving off uphill" },
+      { id: "s3", title: "Moving off downhill" },
+      { id: "s4", title: "Controlled stopping" },
+      { id: "s5", title: "Emergency stop" },
+    ],
+  },
+  {
+    id: "road-skills",
+    title: "Road Skills & Junctions",
+    icon: "road",
+    topics: [
+      { id: "r1", title: "Turning left at junctions" },
+      { id: "r2", title: "Turning right at junctions" },
+      { id: "r3", title: "T-junctions & crossroads" },
+      { id: "r4", title: "Roundabouts (single & multi-lane)" },
+      { id: "r5", title: "Traffic lights & signals" },
+      { id: "r6", title: "Lane discipline & changing" },
+      { id: "r7", title: "Merging onto dual carriageway" },
+      { id: "r8", title: "Overtaking safely" },
+    ],
+  },
+  {
+    id: "parking",
+    title: "Parking & Reversing",
+    icon: "park",
+    topics: [
+      { id: "p1", title: "Parallel parking (left side)" },
+      { id: "p2", title: "Bay parking (forward)" },
+      { id: "p3", title: "Bay parking (reverse)" },
+      { id: "p4", title: "Three-point turn" },
+      { id: "p5", title: "Reversing around a corner" },
+      { id: "p6", title: "Hill start with handbrake" },
+    ],
+  },
+  {
+    id: "highway",
+    title: "Highway & High Speed",
+    icon: "highway",
+    topics: [
+      { id: "h1", title: "Entering the motorway/highway" },
+      { id: "h2", title: "Exiting the motorway/highway" },
+      { id: "h3", title: "Maintaining safe following distance" },
+      { id: "h4", title: "Overtaking on the highway" },
+      { id: "h5", title: "Speed management & cruise control" },
+    ],
+  },
+  {
+    id: "test-prep",
+    title: "Test Preparation",
+    icon: "test",
+    topics: [
+      { id: "t1", title: "Hazard perception training" },
+      { id: "t2", title: "Show-me / Tell-me questions" },
+      { id: "t3", title: "Independent driving practice" },
+      { id: "t4", title: "Mock driving test" },
+      { id: "t5", title: "Test route familiarity" },
+    ],
+  },
+];
+
+// --- Mock Learner Progress (swap with GET /api/learner/progress) ---
+const MOCK_LEARNER_PROGRESS = {
+  learnerId: 101,
+  learnerName: "Alex Johnson",
+  joinedDate: "2025-11-15",
+  totalLessonsBooked: 18,
+  totalHoursDriven: 27,
+  // Each key is a topic ID, value has status + instructor who taught it
+  topicProgress: {
+    // Vehicle Basics — all completed by Instructor 1
+    b1: { status: "completed", instructorId: 1, completedDate: "2025-11-20" },
+    b2: { status: "completed", instructorId: 1, completedDate: "2025-11-20" },
+    b3: { status: "completed", instructorId: 1, completedDate: "2025-11-22" },
+    b4: { status: "completed", instructorId: 1, completedDate: "2025-11-22" },
+    b5: { status: "completed", instructorId: 1, completedDate: "2025-11-25" },
+    b6: { status: "completed", instructorId: 1, completedDate: "2025-11-27" },
+    // Slow Speed — completed by Instructor 1
+    s1: { status: "completed", instructorId: 1, completedDate: "2025-12-01" },
+    s2: { status: "completed", instructorId: 1, completedDate: "2025-12-03" },
+    s3: { status: "completed", instructorId: 1, completedDate: "2025-12-05" },
+    s4: { status: "completed", instructorId: 1, completedDate: "2025-12-08" },
+    s5: { status: "completed", instructorId: 2, completedDate: "2025-12-15" },
+    // Road Skills — mixed instructors, partially done
+    r1: { status: "completed", instructorId: 2, completedDate: "2025-12-18" },
+    r2: { status: "completed", instructorId: 2, completedDate: "2025-12-20" },
+    r3: { status: "completed", instructorId: 2, completedDate: "2025-12-28" },
+    r4: { status: "completed", instructorId: 3, completedDate: "2026-01-05" },
+    r5: { status: "in-progress", instructorId: 3 },
+    r6: { status: "not-started" },
+    r7: { status: "not-started" },
+    r8: { status: "not-started" },
+    // Parking — some in progress
+    p1: { status: "completed", instructorId: 2, completedDate: "2026-01-10" },
+    p2: { status: "in-progress", instructorId: 3 },
+    p3: { status: "not-started" },
+    p4: { status: "not-started" },
+    p5: { status: "not-started" },
+    p6: { status: "not-started" },
+    // Highway — not started
+    h1: { status: "not-started" },
+    h2: { status: "not-started" },
+    h3: { status: "not-started" },
+    h4: { status: "not-started" },
+    h5: { status: "not-started" },
+    // Test Prep — not started
+    t1: { status: "not-started" },
+    t2: { status: "not-started" },
+    t3: { status: "not-started" },
+    t4: { status: "not-started" },
+    t5: { status: "not-started" },
+  },
 };
 
 
@@ -324,6 +461,32 @@ function RoadIcon({ className = "w-6 h-6" }) {
   );
 }
 
+// Progress/clipboard icon
+function ProgressIcon({ className = "w-6 h-6" }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+    </svg>
+  );
+}
+
+// Chevron down icon (for accordions)
+function ChevronDownIcon({ className = "w-4 h-4" }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+    </svg>
+  );
+}
+
+// Clock icon
+function ClockIcon({ className = "w-4 h-4" }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
 
 /* ============================================
    REUSABLE COMPONENTS
@@ -350,11 +513,11 @@ function Navbar({ onLoginClick, onSignupClick }) {
         <div className="flex items-center justify-between h-18 lg:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group" id="nav-logo">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-500/30 transition-all duration-300 group-hover:shadow-brand-500/50 group-hover:scale-105">
-              <SteeringWheelIcon className="w-5 h-5 text-white" />
+            <div className="w-12 h-12 flex items-center justify-center transition-all duration-300 group-hover:scale-105">
+              <img src="/logo.jpeg" alt="Sanos Logo" className="w-full h-full object-contain" />
             </div>
             <span className="text-xl font-display font-bold text-white tracking-tight">
-              Drive<span className="text-gradient">Mate</span>
+              Sanos <span className="text-gradient">Driving School</span>
             </span>
           </Link>
 
@@ -451,11 +614,17 @@ function HeroSection({
   onTransmissionChange,
   onSearchSubmit,
 }) {
+  const heroRef = useRef(null);
+
   return (
     <section
       id="hero"
+      ref={heroRef}
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
+      {/* Particle cursor effect */}
+      <ParticleCursor containerRef={heroRef} />
+
       {/* Cinematic Background */}
       <div className="absolute inset-0">
         <img 
@@ -486,7 +655,7 @@ function HeroSection({
         >
           Your Road to{" "}
           <span className="relative inline-block">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 via-brand-400 to-brand-500 animate-pulse-glow-text">
+            <span className="animated-gradient-text">
               Freedom
             </span>
           </span>
@@ -549,14 +718,16 @@ function HeroSection({
             </div>
 
             {/* Search Button */}
-            <button
-              type="submit"
-              id="hero-search-btn"
-              className="flex items-center justify-center gap-2 px-7 py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer whitespace-nowrap uppercase tracking-wider"
-            >
-              <SearchIcon className="w-4 h-4" />
-              <span>Search</span>
-            </button>
+            <MagneticButton strength={0.2}>
+              <button
+                type="submit"
+                id="hero-search-btn"
+                className="click-scale flex items-center justify-center gap-2 px-7 py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer whitespace-nowrap uppercase tracking-wider"
+              >
+                <SearchIcon className="w-4 h-4" />
+                <span>Search</span>
+              </button>
+            </MagneticButton>
           </form>
         </div>
 
@@ -566,13 +737,15 @@ function HeroSection({
           style={{ animationDelay: "0.5s" }}
         >
           {[
-            { value: "50K+", label: "Learners" },
-            { value: "2,400+", label: "Instructors" },
-            { value: "4.8★", label: "Avg Rating" },
-            { value: "92%", label: "Pass Rate" },
+            { value: 50, suffix: "K+", label: "Learners" },
+            { value: 2400, suffix: "+", label: "Instructors", prefix: "" },
+            { value: 4.8, suffix: "★", label: "Avg Rating" },
+            { value: 92, suffix: "%", label: "Pass Rate" },
           ].map((stat) => (
             <div key={stat.label} className="text-center py-5 px-4 bg-slate-950/50 hover:bg-white/5 transition-colors duration-300 group">
-              <div className="text-xl sm:text-2xl font-black text-white group-hover:text-brand-400 transition-colors duration-300 font-display">{stat.value}</div>
+              <div className="text-xl sm:text-2xl font-black text-white group-hover:text-brand-400 transition-colors duration-300 font-display">
+                <AnimatedCounter target={stat.value} suffix={stat.suffix || ""} prefix={stat.prefix || ""} duration={2500} />
+              </div>
               <div className="text-xs text-slate-500 font-semibold mt-1 uppercase tracking-wider">{stat.label}</div>
             </div>
           ))}
@@ -612,6 +785,7 @@ function HowItWorksSection() {
 
   return (
     <section id="how-it-works" className="py-28 sm:py-36 bg-slate-950 relative overflow-hidden">
+      {/* Glow cursor follow effect */}
       {/* Subtle road stripe */}
       <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/5 to-transparent" />
 
@@ -632,29 +806,30 @@ function HowItWorksSection() {
         </div>
 
         {/* Steps Grid */}
-        <div className="stagger-children grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
           {HOW_IT_WORKS_STEPS.map((step, index) => (
-            <div
-              key={step.title}
-              className="card-glow group relative text-center p-10 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-brand-500/30 hover:bg-white/[0.04] transition-all duration-500 hover:-translate-y-2"
-            >
-              {/* Step Number — Road marker style */}
-              <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-slate-900 border-2 border-brand-500 text-brand-400 text-sm font-black flex items-center justify-center shadow-lg shadow-brand-500/20 font-display">
-                0{index + 1}
-              </div>
+            <ScrollReveal key={step.title} direction="up" delay={index * 150}>
+              <div
+                className="card-glow shine-sweep hover-lift group relative text-center p-10 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-brand-500/30 hover:bg-white/[0.04] transition-all duration-500"
+              >
+                {/* Step Number — Road marker style */}
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-slate-900 border-2 border-brand-500 text-brand-400 text-sm font-black flex items-center justify-center shadow-lg shadow-brand-500/20 font-display">
+                  0{index + 1}
+                </div>
 
-              {/* Icon Container */}
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-500/10 text-brand-400 mb-7 transition-all duration-500 group-hover:scale-110 group-hover:bg-brand-500/20 group-hover:shadow-lg group-hover:shadow-brand-500/20">
-                {iconMap[step.icon]}
-              </div>
+                {/* Icon Container */}
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-500/10 text-brand-400 mb-7 transition-all duration-500 group-hover:scale-110 group-hover:bg-brand-500/20 group-hover:shadow-lg group-hover:shadow-brand-500/20">
+                  {iconMap[step.icon]}
+                </div>
 
-              <h3 className="font-display text-xl font-bold text-white mb-3">
-                {step.title}
-              </h3>
-              <p className="text-slate-400 leading-relaxed text-sm">
-                {step.description}
-              </p>
-            </div>
+                <h3 className="font-display text-xl font-bold text-white mb-3">
+                  {step.title}
+                </h3>
+                <p className="text-slate-400 leading-relaxed text-sm">
+                  {step.description}
+                </p>
+              </div>
+            </ScrollReveal>
           ))}
         </div>
       </div>
@@ -669,9 +844,18 @@ function HowItWorksSection() {
  * - Glowing hover effects
  */
 function InstructorCard({ instructor, onViewProfile, onBookNow }) {
+  const tiltRef = useTilt({ maxTilt: 6, glare: true, maxGlare: 0.1, scale: 1.02 });
+  const toast = useToast();
+
+  const handleBookNow = (id) => {
+    onBookNow(id);
+    toast?.addToast(`Booking lesson with ${instructor.name}...`, "info");
+  };
+
   return (
     <div
-      className="card-glow group relative bg-slate-900/80 rounded-2xl border border-white/5 overflow-hidden hover:border-brand-500/20 transition-all duration-500 hover:-translate-y-2 hover:shadow-glow flex flex-col h-full"
+      ref={tiltRef}
+      className="card-glow shine-sweep group relative bg-slate-900/80 rounded-2xl border border-white/5 overflow-hidden hover:border-brand-500/20 transition-all duration-500 hover:shadow-glow flex flex-col h-full tilt-card"
       id={`instructor-card-${instructor.id}`}
     >
       {/* Image Container */}
@@ -739,12 +923,16 @@ function InstructorCard({ instructor, onViewProfile, onBookNow }) {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-white/[0.03] rounded-xl p-3 text-center ring-1 ring-white/5">
-            <div className="text-lg font-black text-brand-400 font-display">{instructor.passRate}%</div>
+          <div className="bg-white/[0.03] rounded-xl p-3 text-center ring-1 ring-white/5 hover:bg-white/[0.05] transition-colors">
+            <div className="text-lg font-black text-brand-400 font-display">
+              <AnimatedCounter target={instructor.passRate} suffix="%" duration={1800} />
+            </div>
             <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Pass Rate</div>
           </div>
-          <div className="bg-white/[0.03] rounded-xl p-3 text-center ring-1 ring-white/5">
-            <div className="text-lg font-black text-white font-display">{instructor.yearsExperience}+</div>
+          <div className="bg-white/[0.03] rounded-xl p-3 text-center ring-1 ring-white/5 hover:bg-white/[0.05] transition-colors">
+            <div className="text-lg font-black text-white font-display">
+              <AnimatedCounter target={instructor.yearsExperience} suffix="+" duration={1500} />
+            </div>
             <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Years Exp</div>
           </div>
         </div>
@@ -754,14 +942,14 @@ function InstructorCard({ instructor, onViewProfile, onBookNow }) {
           <button
             onClick={() => onViewProfile(instructor.id)}
             id={`view-profile-${instructor.id}`}
-            className="flex-1 px-4 py-3 text-sm font-bold text-slate-400 bg-transparent border border-white/10 rounded-xl hover:bg-white/5 hover:text-white hover:border-white/20 transition-all duration-200 cursor-pointer"
+            className="click-scale flex-1 px-4 py-3 text-sm font-bold text-slate-400 bg-transparent border border-white/10 rounded-xl hover:bg-white/5 hover:text-white hover:border-white/20 transition-all duration-200 cursor-pointer"
           >
             Profile
           </button>
           <button
-            onClick={() => onBookNow(instructor.id)}
+            onClick={() => handleBookNow(instructor.id)}
             id={`book-now-${instructor.id}`}
-            className="flex-[1.5] flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
+            className="click-scale flex-[1.5] flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
           >
             Book Now
             <ArrowRightIcon className="w-3.5 h-3.5" />
@@ -815,14 +1003,15 @@ function InstructorGridSection({
         </div>
 
         {/* Instructor Cards Grid */}
-        <div className="stagger-children grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
-          {instructors.map((instructor) => (
-            <InstructorCard
-              key={instructor.id}
-              instructor={instructor}
-              onViewProfile={onViewProfile}
-              onBookNow={onBookNow}
-            />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
+          {instructors.map((instructor, index) => (
+            <ScrollReveal key={instructor.id} direction="up" delay={index * 100} duration={700}>
+              <InstructorCard
+                instructor={instructor}
+                onViewProfile={onViewProfile}
+                onBookNow={onBookNow}
+              />
+            </ScrollReveal>
           ))}
         </div>
       </div>
@@ -870,23 +1059,24 @@ function TrustSection() {
 
         {/* Trust Feature Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {TRUST_FEATURES.map((feature) => (
-            <div
-              key={feature.title}
-              className="card-glow group relative p-8 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] hover:border-brand-500/20 transition-all duration-500 hover:-translate-y-2"
-            >
-              {/* Icon */}
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-500/10 text-brand-400 mb-6 transition-all duration-500 group-hover:scale-110 group-hover:bg-brand-500/15 group-hover:shadow-lg group-hover:shadow-brand-500/10">
-                {iconMap[feature.icon]}
-              </div>
+          {TRUST_FEATURES.map((feature, index) => (
+            <ScrollReveal key={feature.title} direction="up" delay={index * 120} duration={700}>
+              <div
+                className="card-glow shine-sweep hover-lift group relative p-8 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] hover:border-brand-500/20 transition-all duration-500"
+              >
+                {/* Icon */}
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-500/10 text-brand-400 mb-6 transition-all duration-500 group-hover:scale-110 group-hover:bg-brand-500/15 group-hover:shadow-lg group-hover:shadow-brand-500/10">
+                  {iconMap[feature.icon]}
+                </div>
 
-              <h3 className="font-display text-lg font-bold text-white mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                {feature.description}
-              </p>
-            </div>
+                <h3 className="font-display text-lg font-bold text-white mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-sm text-slate-400 leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            </ScrollReveal>
           ))}
         </div>
       </div>
@@ -916,17 +1106,19 @@ function CTASection({ onGetStarted }) {
           </h2>
           <p className="max-w-xl mx-auto text-lg text-slate-400 leading-relaxed mb-10">
             Join thousands of learner drivers who found their perfect instructor
-            on DriveMate. Your first lesson is just a few clicks away.
+            on Sanos Driving School. Your first lesson is just a few clicks away.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              onClick={onGetStarted}
-              id="cta-get-started-btn"
-              className="inline-flex items-center gap-2 px-8 py-4 text-base font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300 hover:-translate-y-1 animate-pulse-glow cursor-pointer uppercase tracking-wider"
-            >
-              Find Your Instructor
-              <ArrowRightIcon className="w-5 h-5" />
-            </button>
+            <MagneticButton strength={0.25}>
+              <button
+                onClick={onGetStarted}
+                id="cta-get-started-btn"
+                className="click-scale inline-flex items-center gap-2 px-8 py-4 text-base font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300 hover:-translate-y-1 animate-pulse-glow cursor-pointer uppercase tracking-wider"
+              >
+                Find Your Instructor
+                <ArrowRightIcon className="w-5 h-5" />
+              </button>
+            </MagneticButton>
             <Link
               to="/how-it-works"
               className="inline-flex items-center gap-2 px-8 py-4 text-base font-bold text-slate-400 border border-white/10 hover:border-white/20 rounded-xl hover:bg-white/5 hover:text-white transition-all duration-200"
@@ -1047,7 +1239,7 @@ function Footer({ onNewsletterSubmit, newsletterEmail, onNewsletterEmailChange }
         {/* Bottom Bar */}
         <div className="py-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-slate-600">
-            © {new Date().getFullYear()} DriveMate. All rights reserved.
+            © {new Date().getFullYear()} Sanos Driving School. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             {["Facebook", "Twitter", "Instagram"].map((social) => (
@@ -1136,7 +1328,7 @@ function AuthModal({ isOpen, onClose, initialTab = "login" }) {
       onKeyDown={handleKeyDown}
       role="dialog"
       aria-modal="true"
-      aria-label={activeTab === "login" ? "Log in to DriveMate" : "Create a DriveMate account"}
+      aria-label={activeTab === "login" ? "Log in to Sanos Driving School" : "Create a Sanos Driving School account"}
     >
       {/* Backdrop */}
       <div
@@ -1293,7 +1485,7 @@ function AuthModal({ isOpen, onClose, initialTab = "login" }) {
                 className="mt-0.5 w-4 h-4 rounded border-slate-600 text-brand-500 focus:ring-brand-500/30 bg-white/5 cursor-pointer"
               />
               <span className="text-xs text-slate-500 leading-relaxed">
-                I agree to DriveMate's{" "}
+                I agree to Sanos Driving School's{" "}
                 <a href="#terms" className="text-brand-400 hover:underline font-medium">Terms of Service</a>{" "}
                 and{" "}
                 <a href="#privacy" className="text-brand-400 hover:underline font-medium">Privacy Policy</a>.
@@ -1347,6 +1539,465 @@ function AuthModal({ isOpen, onClose, initialTab = "login" }) {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+
+/* ============================================
+   LEARNER PROGRESS TRACKER COMPONENTS
+   ============================================ */
+
+/**
+ * ProgressRing — Animated SVG circular progress indicator
+ */
+function ProgressRing({ percentage, size = 140, strokeWidth = 10 }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg width={size} height={size} className="-rotate-90">
+        {/* Background track */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="rgba(255,255,255,0.06)"
+          strokeWidth={strokeWidth}
+        />
+        {/* Progress arc */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="url(#progressGradient)"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 1.5s cubic-bezier(0.16, 1, 0.3, 1)" }}
+        />
+        <defs>
+          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="var(--color-brand-400)" />
+            <stop offset="100%" stopColor="var(--color-brand-600)" />
+          </linearGradient>
+        </defs>
+      </svg>
+      {/* Center text */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-3xl font-black text-white font-display">{percentage}%</span>
+        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Complete</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * LessonStatusBadge — Status indicator for each topic
+ */
+function LessonStatusBadge({ status }) {
+  const config = {
+    completed: {
+      bg: "bg-emerald-500/10",
+      text: "text-emerald-400",
+      ring: "ring-emerald-500/20",
+      label: "Completed",
+      icon: (
+        <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+        </svg>
+      ),
+    },
+    "in-progress": {
+      bg: "bg-amber-500/10",
+      text: "text-amber-400",
+      ring: "ring-amber-500/20",
+      label: "In Progress",
+      icon: (
+        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5" />
+        </svg>
+      ),
+    },
+    "not-started": {
+      bg: "bg-white/[0.03]",
+      text: "text-slate-600",
+      ring: "ring-white/5",
+      label: "Not Started",
+      icon: (
+        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+        </svg>
+      ),
+    },
+  };
+
+  const c = config[status];
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${c.bg} ${c.text} ring-1 ${c.ring} text-[11px] font-bold uppercase tracking-wide`}>
+      {c.icon}
+      {c.label}
+    </span>
+  );
+}
+
+/**
+ * LearnerProgressPage — Full page showing learner's progress across all topics.
+ * Instructors can view this to see what a learner has already covered.
+ */
+function LearnerProgressPage() {
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const [animateRing, setAnimateRing] = useState(false);
+  const progress = MOCK_LEARNER_PROGRESS;
+
+  // Calculate overall stats
+  const allTopicIds = DRIVING_CURRICULUM.flatMap((cat) => cat.topics.map((t) => t.id));
+  const totalTopics = allTopicIds.length;
+  const completedTopics = allTopicIds.filter((id) => progress.topicProgress[id]?.status === "completed").length;
+  const inProgressTopics = allTopicIds.filter((id) => progress.topicProgress[id]?.status === "in-progress").length;
+  const overallPercent = Math.round((completedTopics / totalTopics) * 100);
+
+  // Animate ring on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimateRing(true), 200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Build instructor history (which instructor taught how many topics)
+  const instructorHistory = {};
+  Object.values(progress.topicProgress).forEach((tp) => {
+    if (tp.status === "completed" && tp.instructorId) {
+      if (!instructorHistory[tp.instructorId]) {
+        instructorHistory[tp.instructorId] = { count: 0, lastDate: "" };
+      }
+      instructorHistory[tp.instructorId].count += 1;
+      if (tp.completedDate > instructorHistory[tp.instructorId].lastDate) {
+        instructorHistory[tp.instructorId].lastDate = tp.completedDate;
+      }
+    }
+  });
+
+  const toggleCategory = (catId) => {
+    setExpandedCategories((prev) => ({ ...prev, [catId]: !prev[catId] }));
+  };
+
+  const expandAll = () => {
+    const all = {};
+    DRIVING_CURRICULUM.forEach((cat) => (all[cat.id] = true));
+    setExpandedCategories(all);
+  };
+
+  const collapseAll = () => setExpandedCategories({});
+
+  const handleShareProgress = () => {
+    console.log("[handleShareProgress] Generating shareable progress report for:", progress.learnerName);
+    // TODO: Generate PDF / shareable link via API
+  };
+
+  // Category icon map
+  const catIconMap = {
+    car: <CarIcon className="w-5 h-5" />,
+    speed: <SpeedometerIcon className="w-5 h-5" />,
+    road: <RoadIcon className="w-5 h-5" />,
+    park: <MapPinIcon className="w-5 h-5" />,
+    highway: <ArrowRightIcon className="w-5 h-5" />,
+    test: <ShieldIcon className="w-5 h-5" />,
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 pt-24 pb-20 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* ===== Page Header ===== */}
+        <div className="mb-10 animate-fade-in-up">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-bold uppercase tracking-widest">
+            <ProgressIcon className="w-4 h-4" />
+            Learner Progress Tracker
+          </div>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-black text-white tracking-tight mb-3">
+            {progress.learnerName}&apos;s{" "}
+            <span className="text-gradient">Progress</span>
+          </h1>
+          <p className="text-lg text-slate-400 max-w-2xl">
+            Track your driving journey across all essential topics. When you switch instructors, 
+            your new instructor can see exactly what you&apos;ve already mastered.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* ===== Main Content (Left) ===== */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Overview Cards */}
+            <div className="animate-fade-in-up grid grid-cols-2 sm:grid-cols-4 gap-4" style={{ animationDelay: "0.1s" }}>
+              <div className="bg-slate-900/80 rounded-2xl p-5 border border-white/5 text-center">
+                <div className="text-2xl font-black text-brand-400 font-display">{completedTopics}</div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">Completed</div>
+              </div>
+              <div className="bg-slate-900/80 rounded-2xl p-5 border border-white/5 text-center">
+                <div className="text-2xl font-black text-amber-400 font-display">{inProgressTopics}</div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">In Progress</div>
+              </div>
+              <div className="bg-slate-900/80 rounded-2xl p-5 border border-white/5 text-center">
+                <div className="text-2xl font-black text-white font-display">{totalTopics - completedTopics - inProgressTopics}</div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">Remaining</div>
+              </div>
+              <div className="bg-slate-900/80 rounded-2xl p-5 border border-white/5 text-center">
+                <div className="text-2xl font-black text-white font-display">{progress.totalHoursDriven}h</div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">Hours Driven</div>
+              </div>
+            </div>
+
+            {/* Expand / Collapse controls */}
+            <div className="flex items-center justify-between animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+              <h2 className="text-xl font-display font-bold text-white">Curriculum Topics</h2>
+              <div className="flex items-center gap-2">
+                <button onClick={expandAll} className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-brand-400 bg-white/5 rounded-lg border border-white/5 hover:border-brand-500/20 transition-all cursor-pointer">
+                  Expand All
+                </button>
+                <button onClick={collapseAll} className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-brand-400 bg-white/5 rounded-lg border border-white/5 hover:border-brand-500/20 transition-all cursor-pointer">
+                  Collapse All
+                </button>
+              </div>
+            </div>
+
+            {/* ===== Category Accordion Cards ===== */}
+            <div className="space-y-4 stagger-children">
+              {DRIVING_CURRICULUM.map((category) => {
+                const catTopicIds = category.topics.map((t) => t.id);
+                const catCompleted = catTopicIds.filter((id) => progress.topicProgress[id]?.status === "completed").length;
+                const catInProgress = catTopicIds.filter((id) => progress.topicProgress[id]?.status === "in-progress").length;
+                const catPercent = Math.round((catCompleted / catTopicIds.length) * 100);
+                const isExpanded = !!expandedCategories[category.id];
+
+                return (
+                  <div
+                    key={category.id}
+                    id={`progress-category-${category.id}`}
+                    className="card-glow bg-slate-900/80 rounded-2xl border border-white/5 overflow-hidden hover:border-brand-500/20 transition-all duration-300"
+                  >
+                    {/* Category Header (clickable) */}
+                    <button
+                      onClick={() => toggleCategory(category.id)}
+                      className="w-full flex items-center gap-4 p-5 sm:p-6 text-left cursor-pointer hover:bg-white/[0.02] transition-colors"
+                    >
+                      {/* Icon */}
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ${catPercent === 100 ? "bg-emerald-500/15 text-emerald-400" : "bg-brand-500/10 text-brand-400"}`}>
+                        {catIconMap[category.icon] || <CarIcon className="w-5 h-5" />}
+                      </div>
+
+                      {/* Title & Stats */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-display font-bold text-white text-lg">{category.title}</h3>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-xs font-bold text-slate-500">
+                            {catCompleted}/{catTopicIds.length} topics
+                          </span>
+                          {catInProgress > 0 && (
+                            <span className="text-xs font-bold text-amber-400">
+                              {catInProgress} in progress
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Mini progress bar */}
+                      <div className="hidden sm:flex items-center gap-3 shrink-0">
+                        <div className="w-24 h-2 rounded-full bg-white/5 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ${catPercent === 100 ? "bg-gradient-to-r from-emerald-400 to-emerald-500" : "bg-gradient-to-r from-brand-400 to-brand-600"}`}
+                            style={{ width: `${catPercent}%` }}
+                          />
+                        </div>
+                        <span className={`text-sm font-black font-display w-10 text-right ${catPercent === 100 ? "text-emerald-400" : "text-white"}`}>
+                          {catPercent}%
+                        </span>
+                      </div>
+
+                      {/* Chevron */}
+                      <ChevronDownIcon className={`w-5 h-5 text-slate-500 transition-transform duration-300 shrink-0 ${isExpanded ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {/* Expanded topics list */}
+                    {isExpanded && (
+                      <div className="border-t border-white/5 animate-fade-in">
+                        {category.topics.map((topic) => {
+                          const tp = progress.topicProgress[topic.id] || { status: "not-started" };
+                          const instructor = tp.instructorId ? MOCK_INSTRUCTORS.find((i) => i.id === tp.instructorId) : null;
+
+                          return (
+                            <div
+                              key={topic.id}
+                              className="flex items-center gap-4 px-5 sm:px-6 py-4 border-b border-white/[0.03] last:border-b-0 hover:bg-white/[0.02] transition-colors"
+                            >
+                              {/* Status dot */}
+                              <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                                tp.status === "completed" ? "bg-emerald-400 shadow-lg shadow-emerald-400/30" :
+                                tp.status === "in-progress" ? "bg-amber-400 shadow-lg shadow-amber-400/30 animate-pulse" :
+                                "bg-slate-700"
+                              }`} />
+
+                              {/* Topic title */}
+                              <div className="flex-1 min-w-0">
+                                <span className={`text-sm font-medium ${
+                                  tp.status === "completed" ? "text-slate-300" :
+                                  tp.status === "in-progress" ? "text-white" :
+                                  "text-slate-600"
+                                }`}>
+                                  {topic.title}
+                                </span>
+                              </div>
+
+                              {/* Instructor who taught it */}
+                              {instructor && (
+                                <div className="hidden sm:flex items-center gap-2 shrink-0">
+                                  <img
+                                    src={instructor.photo}
+                                    alt={instructor.name}
+                                    className="w-6 h-6 rounded-full object-cover border border-white/10"
+                                  />
+                                  <span className="text-xs font-medium text-slate-500 max-w-[100px] truncate">
+                                    {instructor.name}
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Date */}
+                              {tp.completedDate && (
+                                <span className="hidden sm:inline text-[11px] font-medium text-slate-600">
+                                  {new Date(tp.completedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                </span>
+                              )}
+
+                              {/* Status Badge */}
+                              <LessonStatusBadge status={tp.status} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ===== Sidebar (Right) ===== */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Progress Ring Card */}
+            <div className="animate-fade-in-up bg-slate-900/80 rounded-2xl p-8 border border-white/5 text-center" style={{ animationDelay: "0.15s" }}>
+              <h3 className="font-display font-bold text-white text-lg mb-6">Overall Progress</h3>
+              <ProgressRing percentage={animateRing ? overallPercent : 0} />
+              <div className="mt-6 grid grid-cols-3 gap-2">
+                <div className="p-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                  <div className="text-sm font-black text-emerald-400 font-display">{completedTopics}</div>
+                  <div className="text-[9px] font-bold text-slate-600 uppercase">Done</div>
+                </div>
+                <div className="p-2 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                  <div className="text-sm font-black text-amber-400 font-display">{inProgressTopics}</div>
+                  <div className="text-[9px] font-bold text-slate-600 uppercase">Active</div>
+                </div>
+                <div className="p-2 rounded-xl bg-white/[0.02] border border-white/5">
+                  <div className="text-sm font-black text-slate-400 font-display">{totalTopics - completedTopics - inProgressTopics}</div>
+                  <div className="text-[9px] font-bold text-slate-600 uppercase">Left</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Instructor History Timeline */}
+            <div className="animate-fade-in-up bg-slate-900/80 rounded-2xl p-6 border border-white/5" style={{ animationDelay: "0.25s" }}>
+              <h3 className="font-display font-bold text-white text-lg mb-6 flex items-center gap-2">
+                <ClockIcon className="w-5 h-5 text-brand-400" />
+                Instructor History
+              </h3>
+              <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+                See which instructors have contributed to your learning journey and how many topics each one covered.
+              </p>
+
+              <div className="space-y-0 relative">
+                {/* Vertical timeline line */}
+                <div className="absolute left-[19px] top-3 bottom-3 w-px bg-gradient-to-b from-brand-500/30 via-white/10 to-transparent" />
+
+                {Object.entries(instructorHistory)
+                  .sort((a, b) => b[1].count - a[1].count)
+                  .map(([instrId, data]) => {
+                    const instructor = MOCK_INSTRUCTORS.find((i) => i.id === parseInt(instrId));
+                    if (!instructor) return null;
+
+                    return (
+                      <div key={instrId} className="relative flex items-start gap-4 py-4 group">
+                        {/* Timeline dot */}
+                        <div className="relative z-10 w-10 h-10 rounded-full overflow-hidden border-2 border-white/10 shrink-0 group-hover:border-brand-500/40 transition-colors">
+                          <img src={instructor.photo} alt={instructor.name} className="w-full h-full object-cover" />
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-white text-sm group-hover:text-brand-400 transition-colors">
+                            {instructor.name}
+                          </div>
+                          <div className="text-xs text-slate-500 mt-0.5">
+                            Taught <span className="font-bold text-brand-400">{data.count} topics</span>
+                          </div>
+                          <div className="text-[11px] text-slate-600 mt-0.5">
+                            Last session: {new Date(data.lastDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* Share Progress CTA */}
+            <div className="animate-fade-in-up bg-slate-900/80 rounded-2xl p-6 border border-white/5" style={{ animationDelay: "0.35s" }}>
+              <h3 className="font-display font-bold text-white text-sm mb-2">Share with your new instructor</h3>
+              <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                Switching instructors? Share your progress so they know exactly where to pick up.
+              </p>
+              <button
+                onClick={handleShareProgress}
+                id="share-progress-btn"
+                className="w-full flex items-center justify-center gap-2 py-3 text-sm font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                </svg>
+                Share Progress Report
+              </button>
+            </div>
+
+            {/* Learner Info Card */}
+            <div className="animate-fade-in-up bg-slate-900/80 rounded-2xl p-6 border border-white/5" style={{ animationDelay: "0.4s" }}>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 rounded-full bg-brand-500/15 flex items-center justify-center text-brand-400 border border-brand-500/20">
+                  <UserIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="font-bold text-white">{progress.learnerName}</div>
+                  <div className="text-xs text-slate-500">
+                    Member since {new Date(progress.joinedDate).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/[0.03] rounded-xl p-3 text-center ring-1 ring-white/5">
+                  <div className="text-lg font-black text-white font-display">{progress.totalLessonsBooked}</div>
+                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Lessons</div>
+                </div>
+                <div className="bg-white/[0.03] rounded-xl p-3 text-center ring-1 ring-white/5">
+                  <div className="text-lg font-black text-white font-display">{Object.keys(instructorHistory).length}</div>
+                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Instructors</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1853,7 +2504,7 @@ function InstructorLandingPage() {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full bg-brand-500/10 border border-brand-500/20 text-xs text-brand-300 font-bold backdrop-blur-md uppercase tracking-widest">
-              <SteeringWheelIcon className="w-4 h-4" /> DriveMate for Instructors
+              <SteeringWheelIcon className="w-4 h-4" /> Sanos Driving School for Instructors
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-black text-white leading-[1.1] mb-6">
               Be your own boss. <br/>
@@ -1878,7 +2529,7 @@ function InstructorLandingPage() {
       <section className="py-28 sm:py-36 bg-slate-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl font-display font-black text-white mb-4">Why teach with DriveMate?</h2>
+            <h2 className="text-3xl sm:text-4xl font-display font-black text-white mb-4">Why teach with Sanos Driving School?</h2>
             <p className="text-lg text-slate-400">We provide the tools, the students, and the support. You provide the expertise.</p>
           </div>
 
@@ -1940,7 +2591,7 @@ function InstructorApplyPage() {
           </div>
           <h2 className="text-3xl font-display font-black text-white mb-4">Application Received!</h2>
           <p className="text-slate-400 mb-8">
-            Thank you for applying to teach with DriveMate. Our onboarding team will review your application and be in touch within 24-48 hours.
+            Thank you for applying to teach with Sanos Driving School. Our onboarding team will review your application and be in touch within 24-48 hours.
           </p>
           <Link
             to="/"
@@ -1963,7 +2614,7 @@ function InstructorApplyPage() {
         <div className="bg-slate-900/80 rounded-2xl border border-white/5 p-8 sm:p-12">
           <div className="mb-10 text-center">
             <h1 className="text-3xl sm:text-4xl font-display font-black text-white mb-3">Apply to Teach</h1>
-            <p className="text-slate-400">Fill out the details below to list your services on DriveMate.</p>
+            <p className="text-slate-400">Fill out the details below to list your services on Sanos Driving School.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -2181,7 +2832,7 @@ function InstructorApplyPage() {
                   className="mt-1 w-4 h-4 rounded border-slate-600 text-brand-500 focus:ring-brand-500/30 bg-white/5 cursor-pointer" 
                 />
                 <span className="text-xs text-slate-400 leading-relaxed">
-                  I declare that the information provided is true and correct. I hold a valid Driving Instructor Authority and a current full Australian driver's licence. I consent to DriveMate verifying my credentials with the relevant state/territory transport authority. I understand that providing false information may result in account termination and legal action.
+                  I declare that the information provided is true and correct. I hold a valid Driving Instructor Authority and a current full Australian driver's licence. I consent to Sanos Driving School verifying my credentials with the relevant state/territory transport authority. I understand that providing false information may result in account termination and legal action.
                 </span>
               </label>
             </div>
@@ -2220,7 +2871,7 @@ function HowItWorksPage() {
           <ArrowRightIcon className="w-4 h-4 rotate-180" /> Back
         </button>
         <div className="text-center mb-16">
-          <h1 className="text-4xl sm:text-5xl font-display font-black text-white mb-6">How DriveMate Works</h1>
+          <h1 className="text-4xl sm:text-5xl font-display font-black text-white mb-6">How Sanos Driving School Works</h1>
           <p className="text-lg text-slate-400 max-w-2xl mx-auto">
             Whether you're looking to learn how to drive safely, or you're an instructor looking to grow your business, we've made the process seamless.
           </p>
@@ -2380,7 +3031,7 @@ function EnterprisePage() {
         
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-white/5 border border-white/10 text-white text-sm font-bold uppercase tracking-widest">
-            DriveMate Enterprise
+            Sanos Driving School Enterprise
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-black text-white mb-6">Scale Your Driving School</h1>
           <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
@@ -2445,7 +3096,7 @@ function HelpCentrePage() {
           {['Getting Started', 'Account & Profile', 'Payments & Refunds', 'Safety & Trust'].map(topic => (
             <div key={topic} className="p-6 bg-slate-900/80 rounded-2xl border border-white/5 hover:border-brand-500/30 transition-colors cursor-pointer">
               <h3 className="text-xl font-bold text-white mb-2">{topic}</h3>
-              <p className="text-slate-400 text-sm">Find answers about {topic.toLowerCase()} on DriveMate.</p>
+              <p className="text-slate-400 text-sm">Find answers about {topic.toLowerCase()} on Sanos Driving School.</p>
             </div>
           ))}
         </div>
@@ -2499,7 +3150,7 @@ function FAQPage() {
           {[
             { q: "How do I book a lesson?", a: "Search for instructors in your area, select an available time, and securely pay online." },
             { q: "Can I cancel my booking?", a: "Yes, you can cancel for a full refund up to 48 hours before the lesson begins." },
-            { q: "Are all instructors verified?", a: "Absolutely. Every instructor on DriveMate undergoes rigorous background checks and licence verification." }
+            { q: "Are all instructors verified?", a: "Absolutely. Every instructor on Sanos Driving School undergoes rigorous background checks and licence verification." }
           ].map((faq, i) => (
             <div key={i} className="p-6 bg-slate-900/80 rounded-2xl border border-white/5">
               <h3 className="text-lg font-bold text-white mb-2">{faq.q}</h3>
@@ -2560,7 +3211,7 @@ function TermsOfServicePage() {
           <div className="prose prose-invert max-w-none text-slate-400 space-y-4">
             <p>Last updated: October 2026</p>
             <h2 className="text-white text-xl font-bold mt-8">1. Acceptance of Terms</h2>
-            <p>By accessing and using DriveMate, you accept and agree to be bound by the terms and provision of this agreement.</p>
+            <p>By accessing and using Sanos Driving School, you accept and agree to be bound by the terms and provision of this agreement.</p>
             <h2 className="text-white text-xl font-bold mt-8">2. User Responsibilities</h2>
             <p>You must provide accurate information when creating an account. Instructors must maintain valid driving instructor licences at all times.</p>
             <h2 className="text-white text-xl font-bold mt-8">3. Payments and Refunds</h2>
@@ -2627,8 +3278,8 @@ function AccessibilityPage() {
         <div className="bg-slate-900/80 p-8 sm:p-12 rounded-3xl border border-white/5">
           <h1 className="text-3xl font-display font-black text-white mb-6">Accessibility Statement</h1>
           <div className="prose prose-invert max-w-none text-slate-400 space-y-4">
-            <p>DriveMate is committed to ensuring digital accessibility for people with disabilities. We are continually improving the user experience for everyone, and applying the relevant accessibility standards.</p>
-            <p>We welcome your feedback on the accessibility of DriveMate. Please let us know if you encounter accessibility barriers on our platform.</p>
+            <p>Sanos Driving School is committed to ensuring digital accessibility for people with disabilities. We are continually improving the user experience for everyone, and applying the relevant accessibility standards.</p>
+            <p>We welcome your feedback on the accessibility of Sanos Driving School. Please let us know if you encounter accessibility barriers on our platform.</p>
           </div>
         </div>
       </div>
@@ -2640,7 +3291,7 @@ function AccessibilityPage() {
    MAIN APP COMPONENT
    ============================================ */
 
-export default function App() {
+function App() {
   const navigate = useNavigate();
   // Ensure page scrolls to top on route change
   const location = useLocation();
@@ -2673,7 +3324,9 @@ export default function App() {
       query: searchQuery,
       transmission: transmissionFilter,
     });
-    // TODO: Navigate to results page or filter instructors via API
+    if (searchQuery.trim()) {
+      navigate("/learners");
+    }
   };
 
   const handleViewProfile = (instructorId) => {
@@ -2720,11 +3373,16 @@ export default function App() {
     // TODO: Focus the search input after scroll
   };
 
+  // Toast hook for notifications
+  const toast = useToast();
+
   const handleNewsletterSubmit = (e) => {
     e.preventDefault();
     console.log("[handleNewsletterSubmit] Email:", newsletterEmail);
+    if (newsletterEmail) {
+      toast?.addToast("You've been subscribed! 🎉", "success");
+    }
     setNewsletterEmail("");
-    // TODO: Send email to newsletter API endpoint
   };
 
   /* ---------- Render ---------- */
@@ -2775,6 +3433,7 @@ export default function App() {
           <Route path="/instructors/apply" element={<InstructorApplyPage />} />
           <Route path="/instructor/:id" element={<InstructorProfilePage />} />
           <Route path="/checkout/:id" element={<CheckoutPage />} />
+          <Route path="/progress" element={<LearnerProgressPage />} />
           <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/enterprise" element={<EnterprisePage />} />
@@ -2797,5 +3456,16 @@ export default function App() {
         onNewsletterEmailChange={(e) => setNewsletterEmail(e.target.value)}
       />
     </div>
+  );
+}
+
+/* ============================================
+   WRAPPED APP WITH TOAST PROVIDER
+   ============================================ */
+export function WrappedApp() {
+  return (
+    <ToastProvider>
+      <App />
+    </ToastProvider>
   );
 }
