@@ -799,7 +799,74 @@ function HeroSection({
 
 
 /**
- * How It Works â€” 3-Step Process
+ * AboutSection
+ * Professional introduction to SANOS Driving School
+ */
+function AboutSection() {
+  return (
+    <section className="py-24 sm:py-32 bg-gray-50 border-t border-b border-gray-100 overflow-hidden relative">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-500/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-400/5 rounded-full blur-[80px] translate-y-1/3 -translate-x-1/4" />
+      
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+        
+        <ScrollReveal direction="up" delay={100}>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full bg-white border border-gray-200 text-gray-600 text-xs font-bold uppercase tracking-widest shadow-sm mx-auto">
+            <span className="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+            About Us
+          </div>
+        </ScrollReveal>
+
+        <ScrollReveal direction="up" delay={200}>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-black text-gray-900 leading-tight mb-10">
+            Welcome to <span className="text-brand-500">SANOS Driving School</span>
+          </h2>
+        </ScrollReveal>
+
+        <div className="space-y-6 text-lg text-gray-600 leading-relaxed">
+          <ScrollReveal direction="up" delay={300}>
+            <p>
+              A trusted driving school based in Adelaide, South Australia. <span className="font-semibold text-gray-900 bg-brand-50 px-1.5 py-0.5 rounded">Founded by Santosh Dhakal</span>, SANOS Driving School is dedicated to helping learners become <strong className="text-gray-900">safe, confident, and responsible drivers</strong>.
+            </p>
+          </ScrollReveal>
+          
+          <ScrollReveal direction="up" delay={400}>
+            <p>
+              We specialize in assisting overseas licence holders, first-time learners, and anyone looking to improve their driving skills and prepare for the South Australian driving test.
+            </p>
+          </ScrollReveal>
+
+          <ScrollReveal direction="up" delay={500}>
+            <p>
+              With a <strong className="text-gray-900">patient, friendly, and professional approach</strong>, we provide structured lessons tailored to each student's experience level and learning style. Our goal is not only to help students pass their driving test but also to develop safe driving habits that last a lifetime.
+            </p>
+          </ScrollReveal>
+
+          <ScrollReveal direction="up" delay={600}>
+            <p>
+              We proudly support Adelaide's diverse community, including students from multicultural backgrounds, by providing clear guidance and practical driving knowledge in a comfortable learning environment.
+            </p>
+          </ScrollReveal>
+
+          <ScrollReveal direction="up" delay={700}>
+            <p>
+              At SANOS Driving School, your safety, confidence, and success are our priorities. Whether you are starting from scratch or converting your overseas licence, we are here to help you achieve your driving goals.
+            </p>
+            <div className="mt-12 pt-8 border-t border-gray-200/60 max-w-2xl mx-auto">
+              <p className="font-display font-black text-2xl text-gray-900">
+                Drive with confidence. <span className="text-brand-500">Drive with SANOS.</span>
+              </p>
+            </div>
+          </ScrollReveal>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * How It Works — 3-Step Process
  * Dark themed with numbered road-style markers
  */
 function HowItWorksSection() {
@@ -2263,6 +2330,9 @@ function HomePage({
         onTransmissionChange={handleInstructorFilter}
         onSearchSubmit={handleSearchSubmit}
       />
+
+      {/* About Section */}
+      <AboutSection />
 
       {/* How It Works */}
       <HowItWorksSection />
