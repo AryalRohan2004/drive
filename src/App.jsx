@@ -1197,7 +1197,6 @@ function CTASection({ onGetStarted }) {
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
         <div className="p-12 sm:p-16 rounded-3xl bg-white border border-gray-100 shadow-xl">
-          <SteeringWheelIcon className="w-12 h-12 text-brand-500 mx-auto mb-8 animate-float" />
           <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight mb-6">
             Ready to Hit the Road?
           </h2>
@@ -1243,9 +1242,6 @@ function Footer({ onNewsletterSubmit, newsletterEmail, onNewsletterEmailChange }
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-3 mb-5 group">
-              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-                <SteeringWheelIcon className="w-5 h-5 text-white" />
-              </div>
               <span className="text-xl font-display font-bold text-white tracking-tight">
                 Sanos <span className="text-white/80">Driving School</span>
               </span>
@@ -1465,9 +1461,6 @@ function AuthModal({ isOpen, onClose, initialTab = "login", users = [], setUsers
         {/* Header with Logo */}
         <div className="pt-8 pb-2 px-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-brand-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
-              <SteeringWheelIcon className="w-4 h-4 text-white" />
-            </div>
             <span className="text-lg font-display font-bold text-gray-900 tracking-tight">
               Sanos <span className="text-brand-500">Driving School</span>
             </span>
@@ -2804,7 +2797,7 @@ function InstructorLandingPage() {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full bg-white/5 border border-white/10 text-xs text-brand-300 font-bold backdrop-blur-md uppercase tracking-widest">
-              <SteeringWheelIcon className="w-4 h-4" /> Sanos Driving School for Instructors
+              Sanos Driving School for Instructors
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-black text-white leading-[1.1] mb-6">
               Be your own boss. <br />
@@ -3201,7 +3194,7 @@ function HowItWorksPage() {
           {/* For Instructors */}
           <div>
             <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-bold uppercase tracking-widest">
-              <SteeringWheelIcon className="w-4 h-4" /> For Instructors
+              For Instructors
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
               {[
