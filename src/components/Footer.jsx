@@ -9,7 +9,7 @@ const Footer = () => {
       <div className="container footer-grid">
         <div className="footer-col">
           <Link to="/" className="footer-logo">
-            <img src="/logo.jpeg" alt="SANOS Driving School Logo" className="footer-logo-image" />
+            <img src="/newLogo.png" alt="SANOS Driving School Logo" className="footer-logo-image" />
           </Link>
           <p className="footer-desc">
             Professional driving instruction in Adelaide, South Australia. Helping you become a safe and confident driver for life.

@@ -10,7 +10,7 @@ const Header = () => {
     <header className="header">
       <div className="container header-container">
         <Link to="/" className="logo">
-          <img src="/logo.jpeg" alt="SANOS Driving School Logo" className="logo-image" />
+          <img src="/newLogo.png" alt="SANOS Driving School Logo" className="logo-image" />
         </Link>
         
         <nav className={`nav ${isOpen ? 'nav-open' : ''}`}>
