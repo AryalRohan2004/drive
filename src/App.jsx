@@ -824,7 +824,7 @@ function AboutSection() {
           </h2>
         </ScrollReveal>
 
-        <div className="space-y-6 text-lg text-gray-600 leading-relaxed">
+        <div className="space-y-6 text-lg text-gray-600 leading-relaxed text-justify">
           <ScrollReveal direction="up" delay={300}>
             <p>
               A trusted driving school based in Adelaide, South Australia. <span className="font-semibold text-gray-900 bg-brand-50 px-1.5 py-0.5 rounded">Founded by Santosh Dhakal</span>, SANOS Driving School is dedicated to helping learners become <strong className="text-gray-900">safe, confident, and responsible drivers</strong>.
@@ -853,7 +853,7 @@ function AboutSection() {
             <p>
               At SANOS Driving School, your safety, confidence, and success are our priorities. Whether you are starting from scratch or converting your overseas licence, we are here to help you achieve your driving goals.
             </p>
-            <div className="mt-12 pt-8 border-t border-gray-200/60 max-w-2xl mx-auto">
+            <div className="mt-12 pt-8 border-t border-gray-200/60 max-w-2xl mx-auto text-center">
               <p className="font-display font-black text-2xl text-gray-900">
                 Drive with confidence. <span className="text-brand-500">Drive with SANOS.</span>
               </p>
