@@ -136,13 +136,13 @@ function ToastItem({ toast, onDismiss }) {
 
   return (
     <div
-      className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl backdrop-blur-xl border shadow-2xl shadow-black/20 ${config.bg} ${config.border} ${toast.exiting ? "toast-exit" : "toast-enter"}`}
+      className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl bg-white backdrop-blur-xl border shadow-2xl shadow-black/8 ${config.border} ${toast.exiting ? "toast-exit" : "toast-enter"}`}
     >
       <div className={`shrink-0 ${config.icon}`}>{config.iconSvg}</div>
-      <p className="text-sm font-medium text-white flex-1">{toast.message}</p>
+      <p className="text-sm font-medium text-gray-800 flex-1">{toast.message}</p>
       <button
         onClick={onDismiss}
-        className="shrink-0 p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+        className="shrink-0 p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all cursor-pointer"
         aria-label="Dismiss"
       >
         <svg
@@ -343,7 +343,7 @@ export function ParticleCursor({ containerRef }) {
           speedY: (Math.random() - 0.5) * 2 - 1,
           life: 1,
           decay: Math.random() * 0.02 + 0.01,
-          hue: Math.random() * 30 + 340, // Pinkish-red to match brand color
+          hue: Math.random() * 30 + 210, // Blue to match brand color
         });
       }
     };
@@ -477,7 +477,7 @@ export function FloatingElement({
    ============================================ */
 export function GlowCursor({
   containerRef,
-  color = "rgba(201, 46, 80, 0.08)",
+  color = "rgba(0, 87, 255, 0.06)",
   size = 500,
 }) {
   const glowRef = useRef(null);
