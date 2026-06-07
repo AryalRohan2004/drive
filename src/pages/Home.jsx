@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, CalendarCheck, TrendingUp, CarFront, Users, MapPin, Star, CheckCircle } from 'lucide-react';
+import { ShieldCheck, CalendarCheck, TrendingUp, CarFront, Users, MapPin, Star, CheckCircle, ArrowRight, Phone, Search, ChevronDown, GraduationCap, Award, Map } from 'lucide-react';
 import './Home.css';
 
 const Home = () => {
@@ -8,24 +8,93 @@ const Home = () => {
     <div className="home-page">
       {/* Hero Section */}
       <section className="hero-section">
-        <div className="container hero-grid fade-in">
-          <div className="hero-content">
-            <span className="badge" style={{ display: 'inline-block', padding: '0.5rem 1rem', background: 'var(--white)', border: '1px solid var(--border-color)', borderRadius: '2rem', fontSize: '0.875rem', fontWeight: '600', marginBottom: '1.5rem', color: 'var(--text-muted)' }}>
-              South Australia's Trusted Driving School
-            </span>
-            <h1 className="h1">
-              Learn to Drive <span className="text-highlight">Safely & Confidently</span>
+        <div className="hero-bg-image" style={{ backgroundImage: "url('/hero_automotive.png')" }}></div>
+        <div className="hero-overlay"></div>
+        <div className="container hero-content-container fade-in">
+          <div className="hero-left">
+            <div className="google-rating">
+              <Star size={16} fill="#FBBF24" color="#FBBF24" /> 5.0 GOOGLE RATED
+            </div>
+            <h1 className="hero-title">
+              Adelaide's <span className="highlight-gold">Trusted</span><br />
+              Driving School
             </h1>
-            <p className="text-lg">
-              Professional driving instruction in Adelaide. Whether you're a first-time learner or converting an overseas licence, we're here to help you succeed.
+            <p className="hero-description">
+              Learn safely, drive confidently, and pass your South Australian driving test with an experienced instructor who's helped 500+ students get their licence.
             </p>
-            <div className="hero-buttons">
-              <Link to="/book" className="btn btn-primary">Book a Lesson</Link>
-              <Link to="/contact" className="btn btn-outline">Get a Quote</Link>
+            <div className="hero-action-buttons">
+              <Link to="/book" className="btn-hero-primary">Book a Lesson <ArrowRight size={18} /></Link>
+              <a href="tel:0414475393" className="btn-hero-glass"><Phone size={18} /> Call 0414 475 393</a>
+              <Link to="/quote" className="btn-hero-glass">Get a Quote</Link>
+            </div>
+            
+            <div className="hero-stats-row">
+              <div className="hero-stat">
+                <GraduationCap size={16} className="stat-icon" />
+                <span>500+ Students Trained</span>
+              </div>
+              <div className="hero-stat">
+                <TrendingUp size={16} className="stat-icon" />
+                <span>98% Pass Rate</span>
+              </div>
+              <div className="hero-stat">
+                <Award size={16} className="stat-icon" />
+                <span>Fully Qualified Instructor</span>
+              </div>
+              <div className="hero-stat">
+                <Map size={16} className="stat-icon" />
+                <span>Adelaide Wide Service</span>
+              </div>
             </div>
           </div>
-          <div className="hero-image-wrapper">
-            <img src="/hero_lesson.png" alt="Driving instructor teaching a student in a modern car" className="hero-image" />
+          
+          <div className="hero-right">
+            <div className="glass-card">
+              <div className="glass-card-inner">
+                <div className="card-logo">
+                  <img src="/newLogo.png" alt="Sanos Logo" />
+                </div>
+                <h3 className="card-title">FIND YOUR INSTRUCTOR</h3>
+                
+                <div className="form-group">
+                  <label>Suburb or postcode</label>
+                  <div className="input-with-icon">
+                    <Search size={18} className="input-icon" />
+                    <input type="text" placeholder="e.g. Mawson Lakes, 5095" />
+                  </div>
+                </div>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Transmission</label>
+                    <div className="select-wrapper">
+                      <select defaultValue="Automatic">
+                        <option value="Automatic">Automatic</option>
+                        <option value="Manual">Manual</option>
+                      </select>
+                      <ChevronDown size={16} className="select-icon" />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Lesson type</label>
+                    <div className="select-wrapper">
+                      <select defaultValue="1 Hour">
+                        <option value="1 Hour">1 Hour</option>
+                        <option value="2 Hours">2 Hours</option>
+                      </select>
+                      <ChevronDown size={16} className="select-icon" />
+                    </div>
+                  </div>
+                </div>
+                
+                <button className="btn-search-instructors">
+                  <Search size={18} /> Search Instructors
+                </button>
+                <button className="btn-find-near-me">
+                  <MapPin size={18} color="#E02424" /> Find Instructors Near Me
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>

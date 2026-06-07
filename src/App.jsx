@@ -37,7 +37,8 @@ function App() {
         <Route path="countries" element={<PlaceholderPage title="Recognised Countries" />} />
         <Route path="faq" element={<PlaceholderPage title="Frequently Asked Questions" />} />
         <Route path="testimonials" element={<PlaceholderPage title="Student Testimonials" />} />
-        <Route path="login" element={<Auth />} />
+        <Route path="login" element={<Auth defaultIsLogin={true} />} />
+        <Route path="signup" element={<Auth defaultIsLogin={false} />} />
         <Route path="book" element={<Booking />} />
         <Route path="learner-dashboard" element={<LearnerDashboard />} />
         <Route path="instructor-dashboard" element={<InstructorDashboard />} />

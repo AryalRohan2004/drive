@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Shield, Car } from 'lucide-react';
 import './Auth.css';
 
-const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+const Auth = ({ defaultIsLogin = true }) => {
+  const [isLogin, setIsLogin] = useState(defaultIsLogin);
   const [role, setRole] = useState('learner');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setIsLogin(defaultIsLogin);
+  }, [defaultIsLogin]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
