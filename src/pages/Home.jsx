@@ -7,155 +7,124 @@ const Home = () => {
   return (
     <div className="home-page">
       {/* Hero Section */}
-      <section className="hero">
-        <div className="container hero-content fade-in">
-          <div className="hero-text">
-            <span className="badge">South Australia's Trusted Driving School</span>
-            <h1 className="h1">Learn to Drive Safely & Confidently</h1>
+      <section className="hero-section">
+        <div className="container hero-grid fade-in">
+          <div className="hero-content">
+            <span className="badge" style={{ display: 'inline-block', padding: '0.5rem 1rem', background: 'var(--white)', border: '1px solid var(--border-color)', borderRadius: '2rem', fontSize: '0.875rem', fontWeight: '600', marginBottom: '1.5rem', color: 'var(--text-muted)' }}>
+              South Australia's Trusted Driving School
+            </span>
+            <h1 className="h1">
+              Learn to Drive <span className="text-highlight">Safely & Confidently</span>
+            </h1>
             <p className="text-lg">
               Professional driving instruction in Adelaide. Whether you're a first-time learner or converting an overseas licence, we're here to help you succeed.
             </p>
-            <div className="hero-actions">
+            <div className="hero-buttons">
               <Link to="/book" className="btn btn-primary">Book a Lesson</Link>
-              <Link to="/contact" className="btn btn-outline bg-white">Get a Quote</Link>
+              <Link to="/contact" className="btn btn-outline">Get a Quote</Link>
             </div>
           </div>
-          <div className="hero-image-placeholder">
-            <div className="image-mockup">
-              <CarFront size={64} className="text-muted" />
-              <span>Premium Hero Image Placeholder</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section className="section about bg-white">
-        <div className="container about-grid">
-          <div className="about-image">
-            <div className="image-mockup">
-              <Users size={48} className="text-muted" />
-              <span>Founder/Instructor Image Placeholder</span>
-            </div>
-          </div>
-          <div className="about-text">
-            <h2 className="h2">Welcome to SANOS Driving School</h2>
-            <p className="text-muted">
-              Founded by Santosh Dhakal, SANOS Driving School is dedicated to providing high-quality, patient, and professional driving education. We understand that learning to drive can be daunting, which is why we focus on creating a supportive and stress-free environment.
-            </p>
-            <ul className="feature-list">
-              <li><CheckCircle className="icon-success" size={20} /> High first-time pass rates</li>
-              <li><CheckCircle className="icon-success" size={20} /> Overseas licence conversion experts</li>
-              <li><CheckCircle className="icon-success" size={20} /> Modern, safe training vehicles</li>
-            </ul>
-            <Link to="/about" className="btn btn-outline" style={{ marginTop: '1.5rem' }}>Learn More About Us</Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Why Choose Us */}
-      <section className="section why-choose">
-        <div className="container">
-          <div className="section-header text-center">
-            <h2 className="h2">Why Choose SANOS</h2>
-            <p className="text-muted">Experience the difference with Adelaide's premier driving instructors.</p>
-          </div>
-          
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon"><ShieldCheck size={28} /></div>
-              <h3 className="h4">Qualified Instructor</h3>
-              <p className="text-muted">Fully accredited and experienced in South Australian road rules.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon"><CalendarCheck size={28} /></div>
-              <h3 className="h4">Flexible Scheduling</h3>
-              <p className="text-muted">Lessons available 7 days a week to fit your busy lifestyle.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon"><TrendingUp size={28} /></div>
-              <h3 className="h4">High Pass Rates</h3>
-              <p className="text-muted">Proven teaching methods that help you pass on your first attempt.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon"><CarFront size={28} /></div>
-              <h3 className="h4">Modern Vehicles</h3>
-              <p className="text-muted">Learn in a safe, dual-control, and easy-to-drive modern vehicle.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon"><Users size={28} /></div>
-              <h3 className="h4">Friendly Style</h3>
-              <p className="text-muted">Patient and calm instruction, perfect for nervous beginners.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon"><MapPin size={28} /></div>
-              <h3 className="h4">Local Knowledge</h3>
-              <p className="text-muted">Familiar with local testing routes in Adelaide and surrounds.</p>
-            </div>
+          <div className="hero-image-wrapper">
+            <img src="/hero_lesson.png" alt="Driving instructor teaching a student in a modern car" className="hero-image" />
           </div>
         </div>
       </section>
 
       {/* Trust Indicators / Stats */}
-      <section className="section stats bg-primary">
+      <section className="stats-section">
         <div className="container stats-grid">
           <div className="stat-item">
-            <span className="stat-number">10+</span>
-            <span className="stat-label">Years Experience</span>
+            <div className="stat-number">10+</div>
+            <div className="stat-label">Years Experience</div>
           </div>
           <div className="stat-item">
-            <span className="stat-number">95%</span>
-            <span className="stat-label">Pass Rate</span>
+            <div className="stat-number">95%</div>
+            <div className="stat-label">Pass Rate</div>
           </div>
           <div className="stat-item">
-            <span className="stat-number">500+</span>
-            <span className="stat-label">Students Trained</span>
+            <div className="stat-number">500+</div>
+            <div className="stat-label">Students Trained</div>
           </div>
           <div className="stat-item">
-            <span className="stat-number">5.0</span>
-            <span className="stat-label">Google Rating</span>
+            <div className="stat-number">5.0</div>
+            <div className="stat-label">Google Rating</div>
           </div>
         </div>
       </section>
-      
-      {/* Testimonials Preview */}
-      <section className="section testimonials bg-white">
+
+      {/* Founder Section */}
+      <section className="founder-section">
+        <div className="container founder-grid">
+          <div className="founder-image-wrapper">
+            <img src="/founder_instructor.png" alt="Santosh Dhakal - Founder of SANOS Driving School" className="founder-image" />
+          </div>
+          <div className="founder-content">
+            <h2 className="h2" style={{ marginBottom: '1.5rem' }}>Welcome to SANOS Driving School</h2>
+            <p className="founder-quote">
+              "Founded by Santosh Dhakal, SANOS Driving School is dedicated to providing high-quality, patient, and professional driving education."
+            </p>
+            <p className="text-muted" style={{ marginBottom: '2rem', fontSize: '1.125rem' }}>
+              We understand that learning to drive can be daunting, which is why we focus on creating a supportive and stress-free environment.
+            </p>
+            <ul className="feature-list" style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2.5rem' }}>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '500' }}><CheckCircle size={24} color="var(--success-green)" /> High first-time pass rates</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '500' }}><CheckCircle size={24} color="var(--success-green)" /> Overseas licence conversion experts</li>
+              <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '500' }}><CheckCircle size={24} color="var(--success-green)" /> Modern, safe training vehicles</li>
+            </ul>
+            <Link to="/about" className="btn btn-outline">Learn More About Us</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose Us */}
+      <section className="features-section">
         <div className="container">
-          <div className="section-header text-center">
-            <h2 className="h2">Student Success Stories</h2>
-            <p className="text-muted">Don't just take our word for it.</p>
+          <div className="section-header text-center" style={{ marginBottom: '4rem' }}>
+            <h2 className="h2">Why Choose SANOS</h2>
+            <p className="text-muted text-lg" style={{ marginTop: '0.5rem' }}>Experience the difference with Adelaide's premier driving instructors.</p>
           </div>
           
-          <div className="testimonials-grid">
-            <div className="testimonial-card">
-              <div className="stars"><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /></div>
-              <p className="testimonial-text">"Santosh is an amazing instructor! He was so patient with me and helped me build my confidence. I passed my test on the first go!"</p>
-              <div className="testimonial-author">- Sarah J.</div>
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="feature-icon-wrapper"><ShieldCheck size={28} /></div>
+              <h3 className="h4">Qualified Instructor</h3>
+              <p>Fully accredited and experienced in South Australian road rules.</p>
             </div>
-            <div className="testimonial-card">
-              <div className="stars"><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /></div>
-              <p className="testimonial-text">"I needed to convert my overseas licence and Santosh explained the SA road rules perfectly. Highly recommend his 3-hour package."</p>
-              <div className="testimonial-author">- Rajiv M.</div>
+            <div className="feature-card">
+              <div className="feature-icon-wrapper"><CalendarCheck size={28} /></div>
+              <h3 className="h4">Flexible Scheduling</h3>
+              <p>Lessons available 7 days a week to fit your busy lifestyle.</p>
             </div>
-            <div className="testimonial-card">
-              <div className="stars"><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /><Star size={16} fill="currentColor" /></div>
-              <p className="testimonial-text">"The best driving school in Adelaide. The car was always clean, and the lessons were well structured."</p>
-              <div className="testimonial-author">- Emily T.</div>
+            <div className="feature-card">
+              <div className="feature-icon-wrapper"><TrendingUp size={28} /></div>
+              <h3 className="h4">High Pass Rates</h3>
+              <p>Proven teaching methods that help you pass on your first attempt.</p>
             </div>
-          </div>
-          
-          <div className="text-center" style={{ marginTop: '2rem' }}>
-            <Link to="/testimonials" className="btn btn-outline">View All Reviews</Link>
+            <div className="feature-card">
+              <div className="feature-icon-wrapper"><CarFront size={28} /></div>
+              <h3 className="h4">Modern Vehicles</h3>
+              <p>Learn in a safe, dual-control, and easy-to-drive modern vehicle.</p>
+            </div>
+            <div className="feature-card">
+              <div className="feature-icon-wrapper"><Users size={28} /></div>
+              <h3 className="h4">Friendly Style</h3>
+              <p>Patient and calm instruction, perfect for nervous beginners.</p>
+            </div>
+            <div className="feature-card">
+              <div className="feature-icon-wrapper"><MapPin size={28} /></div>
+              <h3 className="h4">Local Knowledge</h3>
+              <p>Familiar with local testing routes in Adelaide and surrounds.</p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="section cta">
-        <div className="container text-center">
-          <h2 className="h2">Ready to Start Your Journey?</h2>
-          <p className="text-lg" style={{ marginBottom: '2rem' }}>Book your first lesson today and take the first step towards driving independence.</p>
-          <Link to="/book" className="btn btn-primary" style={{ padding: '1rem 2rem', fontSize: '1.125rem' }}>Book Online Now</Link>
+      <section className="section bg-white border-top">
+        <div className="container text-center" style={{ padding: '6rem 0' }}>
+          <h2 className="h2" style={{ marginBottom: '1rem' }}>Ready to Start Your Journey?</h2>
+          <p className="text-lg text-muted" style={{ marginBottom: '2.5rem', maxWidth: '600px', margin: '1rem auto 2.5rem' }}>Book your first lesson today and take the first step towards driving independence.</p>
+          <Link to="/book" className="btn btn-primary" style={{ padding: '1rem 2.5rem', fontSize: '1.125rem' }}>Book Online Now</Link>
         </div>
       </section>
     </div>

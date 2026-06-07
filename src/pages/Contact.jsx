@@ -74,12 +74,17 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* Mock Map Section */}
+      {/* Map Section - Filled with aerial image of Adelaide */}
       <section className="map-section">
-        <div className="map-placeholder">
-          <MapPin size={48} className="text-muted" />
-          <h3 className="h4 text-muted">Interactive Google Map Placeholder</h3>
-          <p className="text-muted">Showing Adelaide service area</p>
+        <div className="map-image-wrapper">
+          <img src="/adelaide_map.png" alt="Aerial view of Adelaide service area" className="map-image" />
+          <div className="map-overlay">
+            <div className="map-pin-marker">
+              <MapPin size={32} />
+            </div>
+            <h3 className="h4">Adelaide, South Australia</h3>
+            <p className="text-sm">Serving Adelaide & surrounding suburbs</p>
+          </div>
         </div>
       </section>
     </div>
