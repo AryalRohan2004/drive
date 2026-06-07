@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
   /* Clean Professional Color Palette */
@@ -16,7 +16,7 @@
   
   /* Typography */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-heading: 'Manrope', system-ui, sans-serif;
+  --font-heading: 'Inter', system-ui, -apple-system, sans-serif;
   
   /* Refined Shadow Elevation System — deeper & more layered */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px -1px rgb(0 0 0 / 0.06);
@@ -75,6 +75,15 @@ a {
 .text-sm { font-size: 0.875rem; }
 .text-muted { color: var(--text-muted); }
 
+/* Responsive Typography */
+@media (max-width: 768px) {
+  .h1 { font-size: 2.5rem; }
+  .h2 { font-size: 2rem; }
+  .h3 { font-size: 1.25rem; }
+  .h4 { font-size: 1.125rem; }
+  body { font-size: 1rem; line-height: 1.6; }
+}
+
 /* Layout utilities */
 .container {
   width: 100%;
@@ -84,7 +93,12 @@ a {
 }
 
 .section {
-  padding: 6rem 0;
+  padding: 8rem 0;
+}
+
+@media (max-width: 768px) {
+  .section { padding: 4rem 0; }
+  .container { padding: 0 1.5rem; }
 }
 
 .bg-white { background-color: var(--white); }

@@ -57,7 +57,7 @@
   letter-spacing: -0.03em;
   line-height: 1.1;
   color: white;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .highlight-gold {
@@ -68,8 +68,8 @@
   font-size: 1.125rem;
   color: rgba(255, 255, 255, 0.9);
   margin-bottom: 2.5rem;
-  max-width: 600px;
   line-height: 1.6;
+  max-width: 90%;
 }
 
 .hero-action-buttons {

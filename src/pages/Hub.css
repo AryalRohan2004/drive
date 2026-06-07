@@ -28,6 +28,52 @@
   gap: 1rem;
 }
 
+.hub-hero {
+  position: relative;
+  padding: 10rem 0 8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+}
+
+.hub-hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
+}
+
+.hub-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.95), rgba(17, 24, 39, 0.85));
+  z-index: 2;
+}
+
+.hub-hero-content {
+  position: relative;
+  z-index: 3;
+  color: white;
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+.hub-hero-icon {
+  margin: 0 auto 1.5rem;
+  color: var(--accent-yellow);
+  opacity: 0.9;
+}
+
+.hub-hero-desc {
+  font-size: 1.25rem;
+  max-width: 700px;
+  margin: 1.5rem auto 0;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+}
+
 .accordion-item {
   background: var(--white);
   border: 1px solid var(--border-color);

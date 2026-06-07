@@ -20,11 +20,13 @@ const AccordionItem = ({ title, children, defaultOpen = false }) => {
 const Hub = () => {
   return (
     <div className="hub-page">
-      <section className="section bg-primary text-white text-center" style={{ paddingTop: '6rem', paddingBottom: '6rem' }}>
-        <div className="container">
-          <BookOpen size={48} className="mb-3 mx-auto" style={{ margin: '0 auto', opacity: 0.8 }} />
+      <section className="hub-hero">
+        <div className="hub-hero-bg" style={{ backgroundImage: "url('/road_aerial.png')" }}></div>
+        <div className="hub-hero-overlay"></div>
+        <div className="container hub-hero-content">
+          <BookOpen size={56} className="hub-hero-icon" />
           <h1 className="h1 text-white">Licensing Information Hub</h1>
-          <p className="text-lg" style={{ maxWidth: '700px', margin: '0 auto', marginTop: '1.5rem', opacity: 0.9 }}>
+          <p className="hub-hero-desc">
             Everything you need to know about getting your driver's licence in South Australia. From the L's to your full licence.
           </p>
         </div>

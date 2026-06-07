@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Layout from './layouts/Layout';
 import Home from './pages/Home';
 
@@ -22,10 +22,22 @@ const PlaceholderPage = ({ title }) => (
   </div>
 );
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
+
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Layout />}>
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="pricing" element={<Pricing />} />
         <Route path="packages" element={<Packages />} />
@@ -44,7 +56,8 @@ function App() {
         <Route path="instructor-dashboard" element={<InstructorDashboard />} />
         <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
       </Route>
-    </Routes>
+      </Routes>
+    </>
   );
 }
 
