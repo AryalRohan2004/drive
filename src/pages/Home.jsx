@@ -1,7 +1,54 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, CalendarCheck, TrendingUp, CarFront, Users, MapPin, Star, CheckCircle, ArrowRight, Phone, Search, ChevronDown, GraduationCap, Award, Map } from 'lucide-react';
+import { ShieldCheck, CalendarCheck, TrendingUp, CarFront, Users, MapPin, Star, CheckCircle, ArrowRight, Phone, Search, ChevronDown, GraduationCap, Award, Map, Quote } from 'lucide-react';
 import './Home.css';
+
+const successImages = [
+  '/Sucess/s2.jpg',
+  '/Sucess/s3.jpg',
+  '/Sucess/s4.jpg',
+  '/Sucess/s5.jpg',
+  '/Sucess/s6.jpg',
+  '/Sucess/s7.jpg',
+  '/Sucess/s9.jpg',
+  '/Sucess/s10.jpg',
+  '/Sucess/s11.jpg',
+  '/Sucess/s12.jpg',
+  '/Sucess/715771190_122184341390851469_5977678775086273719_n.jpg'
+];
+
+const testimonials = [
+  {
+    name: "Aarav P.",
+    date: "Passed Aug 2025",
+    text: "Passed first time! Santosh is patient and explains every manoeuvre clearly."
+  },
+  {
+    name: "Laxmi D.",
+    date: "Passed Sep 2025",
+    text: "Best driving school in Adelaide. Helped me convert my overseas licence stress-free."
+  },
+  {
+    name: "Marina C.",
+    date: "Passed Oct 2025",
+    text: "I was so nervous before the test — the test-day package made all the difference."
+  },
+  {
+    name: "Sampradha P.",
+    date: "Passed Oct 2025",
+    text: "Friendly, professional and on time every lesson. Highly recommend to any learner."
+  },
+  {
+    name: "Ravi M.",
+    date: "Passed Jul 2025",
+    text: "Knows the SA test routes inside out. The mock tests gave me real confidence."
+  },
+  {
+    name: "Priya S.",
+    date: "Passed Jun 2025",
+    text: "Picked me up from uni every week. Made learning so easy and fun."
+  }
+];
 
 const Home = () => {
   return (
@@ -184,6 +231,53 @@ const Home = () => {
               <h3 className="h4">Local Knowledge</h3>
               <p>Familiar with local testing routes in Adelaide and surrounds.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Our Success Section */}
+      <section className="success-section">
+        <div className="container">
+          <div className="section-header text-center" style={{ marginBottom: '4rem' }}>
+            <h2 className="h2">Our Success Stories</h2>
+            <p className="text-muted text-lg" style={{ marginTop: '0.5rem' }}>Join hundreds of happy students who passed with us.</p>
+          </div>
+          
+          <div className="success-grid">
+            {successImages.map((imgSrc, idx) => (
+              <div className="success-card" key={idx}>
+                <img src={imgSrc} alt={`Successful student ${idx + 1}`} loading="lazy" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="testimonials-section bg-light">
+        <div className="container">
+          <div className="text-center" style={{ marginBottom: '4rem' }}>
+            <span className="text-sm font-medium" style={{ color: '#DC2626', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem' }}>Testimonials</span>
+            <h2 className="h2" style={{ color: '#1E3A8A', fontFamily: "'Times New Roman', serif", fontSize: '3rem' }}>What our students say</h2>
+          </div>
+          
+          <div className="testimonials-grid">
+            {testimonials.map((testimonial, idx) => (
+              <div className="testimonial-card" key={idx}>
+                <div className="testimonial-header">
+                  <div className="stars">
+                    {[...Array(5)].map((_, i) => <Star key={i} size={18} fill="#FBBF24" color="#FBBF24" />)}
+                  </div>
+                  <Quote size={36} color="#FDE68A" fill="#FEF3C7" strokeWidth={1} />
+                </div>
+                <p className="testimonial-text">"{testimonial.text}"</p>
+                <hr className="testimonial-divider" />
+                <div className="testimonial-author">
+                  <strong>{testimonial.name}</strong>
+                  <span>{testimonial.date}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
