@@ -1,7 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, CalendarCheck, TrendingUp, CarFront, Users, MapPin, Star, CheckCircle, ArrowRight, Phone, Search, ChevronDown, GraduationCap, Award, Map, Quote } from 'lucide-react';
+import { useScrollReveal } from '../hooks/useInteractive';
 import './Home.css';
+
+const AnimatedSection = ({ children, className = "" }) => {
+  const [ref, isVisible] = useScrollReveal({ threshold: 0.15, rootMargin: "0px 0px -50px 0px" });
+  return (
+    <div ref={ref} className={`${className} ${isVisible ? 'fade-in' : ''}`} style={{ opacity: isVisible ? 1 : 0, transition: 'opacity 0.6s ease' }}>
+      {children}
+    </div>
+  );
+};
 
 const successImages = [
   '/Sucess/s2.jpg',
@@ -148,7 +158,7 @@ const Home = () => {
 
       {/* Trust Indicators / Stats */}
       <section className="stats-section">
-        <div className="container stats-grid">
+        <AnimatedSection className="container stats-grid">
           <div className="stat-item">
             <div className="stat-number">10+</div>
             <div className="stat-label">Years Experience</div>
@@ -165,12 +175,12 @@ const Home = () => {
             <div className="stat-number">5.0</div>
             <div className="stat-label">Google Rating</div>
           </div>
-        </div>
+        </AnimatedSection>
       </section>
 
       {/* Founder Section */}
       <section className="founder-section">
-        <div className="container founder-grid">
+        <AnimatedSection className="container founder-grid">
           <div className="founder-image-wrapper">
             <img src="/founder_instructor.png" alt="Santosh Dhakal - Founder of SANOS Driving School" className="founder-image" />
           </div>
@@ -189,12 +199,12 @@ const Home = () => {
             </ul>
             <Link to="/about" className="btn btn-outline">Learn More About Us</Link>
           </div>
-        </div>
+        </AnimatedSection>
       </section>
 
       {/* Why Choose Us */}
       <section className="features-section">
-        <div className="container">
+        <AnimatedSection className="container">
           <div className="section-header text-center" style={{ marginBottom: '4rem' }}>
             <h2 className="h2">Why Choose SANOS</h2>
             <p className="text-muted text-lg" style={{ marginTop: '0.5rem' }}>Experience the difference with Adelaide's premier driving instructors.</p>
@@ -232,12 +242,12 @@ const Home = () => {
               <p>Familiar with local testing routes in Adelaide and surrounds.</p>
             </div>
           </div>
-        </div>
+        </AnimatedSection>
       </section>
 
       {/* Our Success Section */}
       <section className="success-section">
-        <div className="container">
+        <AnimatedSection className="container">
           <div className="section-header text-center" style={{ marginBottom: '4rem' }}>
             <h2 className="h2">Our Success Stories</h2>
             <p className="text-muted text-lg" style={{ marginTop: '0.5rem' }}>Join hundreds of happy students who passed with us.</p>
@@ -250,15 +260,15 @@ const Home = () => {
               </div>
             ))}
           </div>
-        </div>
+        </AnimatedSection>
       </section>
 
       {/* Testimonials Section */}
       <section className="testimonials-section bg-light">
-        <div className="container">
+        <AnimatedSection className="container">
           <div className="text-center" style={{ marginBottom: '4rem' }}>
             <span className="text-sm font-medium" style={{ color: '#DC2626', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem' }}>Testimonials</span>
-            <h2 className="h2" style={{ color: '#1E3A8A', fontFamily: "'Times New Roman', serif", fontSize: '3rem' }}>What our students say</h2>
+            <h2 className="h2" style={{ color: '#1E3A8A', fontSize: '3rem' }}>What our students say</h2>
           </div>
           
           <div className="testimonials-grid">
@@ -279,16 +289,16 @@ const Home = () => {
               </div>
             ))}
           </div>
-        </div>
+        </AnimatedSection>
       </section>
 
       {/* CTA Section */}
       <section className="section bg-white border-top">
-        <div className="container text-center" style={{ padding: '6rem 0' }}>
+        <AnimatedSection className="container text-center" style={{ padding: '6rem 0' }}>
           <h2 className="h2" style={{ marginBottom: '1rem' }}>Ready to Start Your Journey?</h2>
           <p className="text-lg text-muted" style={{ marginBottom: '2.5rem', maxWidth: '600px', margin: '1rem auto 2.5rem' }}>Book your first lesson today and take the first step towards driving independence.</p>
           <Link to="/book" className="btn btn-primary" style={{ padding: '1rem 2.5rem', fontSize: '1.125rem' }}>Book Online Now</Link>
-        </div>
+        </AnimatedSection>
       </section>
     </div>
   );
