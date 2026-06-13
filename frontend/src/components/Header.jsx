@@ -8,21 +8,19 @@ const Header = () => {
 
   return (
     <header className="header">
-      <div className="header-container">
+      <div className="container header-container">
         <Link to="/" className="logo">
           <img src="/newLogo.png" alt="SANOS Driving School Logo" className="logo-image" />
         </Link>
         
         <nav className={`nav ${isOpen ? 'nav-open' : ''}`}>
-          <div className="nav-links">
-            <Link to="/" className="nav-link" onClick={() => setIsOpen(false)}>Home</Link>
-            <Link to="/pricing" className="nav-link" onClick={() => setIsOpen(false)}>Lessons & Pricing</Link>
-            <Link to="/packages" className="nav-link" onClick={() => setIsOpen(false)}>Packages</Link>
-            <Link to="/overseas" className="nav-link" onClick={() => setIsOpen(false)}>Overseas Licence</Link>
-            <Link to="/resources" className="nav-link" onClick={() => setIsOpen(false)}>Resources</Link>
-            <Link to="/faq" className="nav-link" onClick={() => setIsOpen(false)}>FAQ</Link>
-            <Link to="/contact" className="nav-link" onClick={() => setIsOpen(false)}>Contact</Link>
-          </div>
+          <Link to="/" className="nav-link" onClick={() => setIsOpen(false)}>Home</Link>
+          <Link to="/pricing" className="nav-link" onClick={() => setIsOpen(false)}>Lessons & Pricing</Link>
+          <Link to="/packages" className="nav-link" onClick={() => setIsOpen(false)}>Packages</Link>
+          <Link to="/overseas" className="nav-link" onClick={() => setIsOpen(false)}>Overseas Licence</Link>
+          <Link to="/resources" className="nav-link" onClick={() => setIsOpen(false)}>Resources</Link>
+          <Link to="/faq" className="nav-link" onClick={() => setIsOpen(false)}>FAQ</Link>
+          <Link to="/contact" className="nav-link" onClick={() => setIsOpen(false)}>Contact</Link>
           <div className="nav-actions">
             <a href="tel:0414475393" className="btn-phone-header">
               <Phone size={16} /> 0414 475 393
