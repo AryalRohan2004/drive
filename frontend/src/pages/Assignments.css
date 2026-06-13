@@ -1,0 +1,11 @@
+.assign-page { min-height: 60vh; }
+.assign-header { margin-bottom: 2rem; }
+.assign-card { background: var(--white); border: 1px solid var(--border-color); border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; }
+.assign-card-header { display: flex; justify-content: space-between; align-items: center; }
+.assign-card-info { display: flex; align-items: center; gap: 1rem; }
+.assign-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--light-gray); display: flex; align-items: center; justify-content: center; color: var(--primary-blue); }
+.assign-status { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
+.assign-alert { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem; }
+.assign-alert.success { background: #F0FDF4; border: 1px solid #BBF7D0; color: #16A34A; }
+.assign-alert.error { background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; }
+.assign-transfer-form { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color); }

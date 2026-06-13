@@ -1,0 +1,313 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                      String    @id
+  fullName                String    @map("full_name")
+  email                   String    @unique
+  phone                   String?
+  passwordHash            String    @map("password_hash")
+  role                    String
+  status                  String    @default("active")
+  dateOfBirth             DateTime? @map("date_of_birth") @db.Date
+  address                 String?
+  suburb                  String?
+  postcode                String?
+  licenseType             String?   @map("license_type")
+  transmissionPreference  String?   @map("transmission_preference")
+  preferredVehicleType    String?   @map("preferred_vehicle_type")
+  pickupAddress           String?   @map("pickup_address")
+  pickupSuburb            String?   @map("pickup_suburb")
+  pickupLatitude          Decimal?  @map("pickup_latitude") @db.Decimal(10, 7)
+  pickupLongitude         Decimal?  @map("pickup_longitude") @db.Decimal(10, 7)
+  emergencyContactName    String?   @map("emergency_contact_name")
+  emergencyContactPhone    String?   @map("emergency_contact_phone")
+  preferredLessonTimes    Json      @map("preferred_lesson_times")
+  specialRequirements     String?   @map("special_requirements")
+  logbookHours            Int       @default(0) @map("logbook_hours")
+  progressPercent         Int       @default(0) @map("progress_percent")
+  licenseNumber           String?   @map("license_number")
+  serviceAreas            String[]  @default([]) @map("service_areas")
+  bio                     String?
+  availability            Json
+  documentationStatus     String    @default("pending") @map("documentation_status")
+  vehicleTypesSupported   String[]  @default([]) @map("vehicle_types_supported")
+  baseAddress             String?   @map("base_address")
+  baseLatitude            Decimal?  @map("base_latitude") @db.Decimal(10, 7)
+  baseLongitude           Decimal?  @map("base_longitude") @db.Decimal(10, 7)
+  serviceRadiusKm         Int       @default(25) @map("service_radius_km")
+  maxTravelDistanceKm     Int       @default(25) @map("max_travel_distance_km")
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  passwordResetTokens     PasswordResetToken[]
+  studentBookings         Booking[]              @relation("BookingStudent")
+  instructorBookings      Booking[]              @relation("BookingInstructor")
+  lessonSessionsAsStudent LessonSession[]        @relation("LessonStudent")
+  lessonSessionsAsInstructor LessonSession[]     @relation("LessonInstructor")
+  studentProgress         StudentProgress[]      @relation("ProgressStudent")
+  progressUpdated        StudentProgress[]      @relation("ProgressUpdatedBy")
+  instructorNotesAsStudent InstructorNote[]      @relation("NoteStudent")
+  instructorNotesAsInstructor InstructorNote[]   @relation("NoteInstructor")
+  trainingRequestsAsStudent  TrainingRequest[]   @relation("TrainingStudent")
+  trainingRequestsAsInstructor TrainingRequest[] @relation("TrainingInstructor")
+  learnerDocuments         LearnerDocument[]      @relation("DocumentStudent")
+  learnerDocumentsVerified  LearnerDocument[]      @relation("DocumentVerifiedBy")
+  assignmentsAsStudent     StudentAssignment[]    @relation("AssignmentStudent")
+  assignmentsAsInstructor  StudentAssignment[]    @relation("AssignmentInstructor")
+  transferRequestsAsStudent TransferRequest[]     @relation("TransferStudent")
+  transferRequestsFromInstructor TransferRequest[] @relation("TransferFromInstructor")
+  transferRequestsToInstructor TransferRequest[]  @relation("TransferToInstructor")
+
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id
+  userId    String    @map("user_id")
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+model LessonPackage {
+  id            String    @id
+  code          String    @unique
+  name          String
+  description   String?
+  price         Decimal   @db.Decimal(10, 2)
+  durationMinutes Int      @default(90) @map("duration_minutes")
+  category      String
+  isActive      Boolean   @default(true) @map("is_active")
+  includedItems Json      @map("included_items")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  bookings          Booking[]
+  trainingRequests  TrainingRequest[]
+
+  @@map("lesson_packages")
+}
+
+model Booking {
+  id            String    @id
+  bookingNumber String    @unique @map("booking_number")
+  userId        String?   @map("user_id")
+  guestName     String?   @map("guest_name")
+  guestEmail    String?   @map("guest_email")
+  guestPhone    String?   @map("guest_phone")
+  bookingType   String    @map("booking_type")
+  packageId     String?   @map("package_id")
+  lessonDate    DateTime  @map("lesson_date") @db.Date
+  lessonTime    DateTime  @map("lesson_time") @db.Time(6)
+  status        String    @default("pending")
+  paymentStatus String    @default("unpaid") @map("payment_status")
+  price         Decimal   @db.Decimal(10, 2)
+  notes         String?
+  pickupSuburb  String?   @map("pickup_suburb")
+  pickupAddress String?   @map("pickup_address")
+  instructorId  String?   @map("instructor_id")
+  vehicleType   String?   @map("vehicle_type")
+  vehicleCategory String? @map("vehicle_category")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  student    User?         @relation("BookingStudent", fields: [userId], references: [id], onDelete: SetNull)
+  instructor User?         @relation("BookingInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
+  package    LessonPackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  sessions   LessonSession[]
+
+  @@map("bookings")
+}
+
+model ContactRequest {
+  id        String   @id
+  name      String
+  email     String
+  phone     String?
+  message   String
+  status    String   @default("new")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("contact_requests")
+}
+
+model LessonSession {
+  id          String    @id
+  bookingId   String?   @map("booking_id")
+  studentId   String?   @map("student_id")
+  instructorId String?  @map("instructor_id")
+  sessionDate DateTime  @map("session_date") @db.Date
+  startTime   DateTime  @map("start_time") @db.Time(6)
+  endTime     DateTime  @map("end_time") @db.Time(6)
+  location    String?
+  lessonType  String?   @map("lesson_type")
+  status      String    @default("scheduled")
+  notes       String?
+  vehicleType String?   @map("vehicle_type")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  booking    Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  student    User?    @relation("LessonStudent", fields: [studentId], references: [id], onDelete: SetNull)
+  instructor User?    @relation("LessonInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
+
+  @@map("lesson_sessions")
+}
+
+model StudentProgress {
+  id             String   @id
+  studentId      String   @map("student_id")
+  skillName      String   @map("skill_name")
+  vehicleType    String?  @map("vehicle_type")
+  status         String   @default("pending")
+  percentComplete Int     @map("percent_complete")
+  lastUpdatedBy  String?  @map("last_updated_by")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  student   User  @relation("ProgressStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  updater   User? @relation("ProgressUpdatedBy", fields: [lastUpdatedBy], references: [id], onDelete: SetNull)
+
+  @@map("student_progress")
+}
+
+model InstructorNote {
+  id           String   @id
+  studentId    String   @map("student_id")
+  instructorId String   @map("instructor_id")
+  note         String
+  vehicleType  String?  @map("vehicle_type")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  student    User @relation("NoteStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  instructor User @relation("NoteInstructor", fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@map("instructor_notes")
+}
+
+model ContentPage {
+  id             String   @id
+  slug           String   @unique
+  title          String
+  content        String
+  seoTitle       String?  @map("seo_title")
+  seoDescription String?  @map("seo_description")
+  isPublished    Boolean  @default(true) @map("is_published")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("content_pages")
+}
+
+model VehicleType {
+  id                          String   @id
+  code                        String   @unique
+  name                        String
+  description                 String?
+  requiresDocumentVerification Boolean @default(false) @map("requires_document_verification")
+  isActive                    Boolean  @default(true) @map("is_active")
+  createdAt                   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("vehicle_types")
+}
+
+model TrainingRequest {
+  id             String    @id
+  studentId      String    @map("student_id")
+  instructorId   String    @map("instructor_id")
+  vehicleType    String    @map("vehicle_type")
+  packageId      String?   @map("package_id")
+  preferredDate  DateTime? @map("preferred_date") @db.Date
+  preferredTime  String?   @map("preferred_time")
+  pickupAddress  String?   @map("pickup_address")
+  pickupSuburb   String?   @map("pickup_suburb")
+  message        String?
+  status         String    @default("pending")
+  responseMessage String?  @map("response_message")
+  respondedAt    DateTime? @map("responded_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  student    User          @relation("TrainingStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  instructor User          @relation("TrainingInstructor", fields: [instructorId], references: [id], onDelete: Cascade)
+  package    LessonPackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  sourceAssignments StudentAssignment[]
+
+  @@map("training_requests")
+}
+
+model LearnerDocument {
+  id             String    @id
+  studentId      String    @map("student_id")
+  documentType   String    @map("document_type")
+  fileUrl        String?   @map("file_url")
+  status         String    @default("pending")
+  verifiedBy     String?   @map("verified_by")
+  rejectionReason String?  @map("rejection_reason")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  student   User @relation("DocumentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  verifier  User? @relation("DocumentVerifiedBy", fields: [verifiedBy], references: [id], onDelete: SetNull)
+
+  @@map("learner_documents")
+}
+
+model StudentAssignment {
+  id                      String    @id
+  studentId              String    @map("student_id")
+  instructorId           String    @map("instructor_id")
+  vehicleType            String    @map("vehicle_type")
+  status                 String    @default("active")
+  startedAt              DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  endedAt                DateTime? @map("ended_at") @db.Timestamptz(6)
+  sourceTrainingRequestId String?   @map("source_training_request_id")
+
+  student  User           @relation("AssignmentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  instructor User         @relation("AssignmentInstructor", fields: [instructorId], references: [id], onDelete: Cascade)
+  sourceTrainingRequest TrainingRequest? @relation(fields: [sourceTrainingRequestId], references: [id], onDelete: SetNull)
+  currentTransferRequests TransferRequest[] @relation("TransferCurrentAssignment")
+  newTransferRequests     TransferRequest[] @relation("TransferNewAssignment")
+
+  @@map("student_assignments")
+}
+
+model TransferRequest {
+  id                     String    @id
+  studentId              String    @map("student_id")
+  fromInstructorId       String    @map("from_instructor_id")
+  toInstructorId         String    @map("to_instructor_id")
+  currentAssignmentId    String?   @map("current_assignment_id")
+  newAssignmentId        String?   @map("new_assignment_id")
+  reason                 String?
+  status                 String    @default("requested")
+  responseMessage        String?   @map("response_message")
+  progressSnapshot       Json      @map("progress_snapshot")
+  hoursTransferred       Int       @default(0) @map("hours_transferred")
+  packageBalanceTransferred Decimal @default(0) @map("package_balance_transferred") @db.Decimal(10, 2)
+  requestedAt            DateTime  @default(now()) @map("requested_at") @db.Timestamptz(6)
+  completedAt            DateTime? @map("completed_at") @db.Timestamptz(6)
+  updatedAt              DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  student           User             @relation("TransferStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  fromInstructor    User             @relation("TransferFromInstructor", fields: [fromInstructorId], references: [id], onDelete: Cascade)
+  toInstructor      User             @relation("TransferToInstructor", fields: [toInstructorId], references: [id], onDelete: Cascade)
+  currentAssignment StudentAssignment? @relation("TransferCurrentAssignment", fields: [currentAssignmentId], references: [id], onDelete: SetNull)
+  newAssignment     StudentAssignment? @relation("TransferNewAssignment", fields: [newAssignmentId], references: [id], onDelete: SetNull)
+
+  @@map("transfer_requests")
+}

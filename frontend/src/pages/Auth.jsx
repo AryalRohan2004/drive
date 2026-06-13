@@ -1,23 +1,70 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { User, Shield, Car } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { User, Shield, Car, AlertCircle, Loader } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import './Auth.css';
 
 const Auth = ({ defaultIsLogin = true }) => {
   const [isLogin, setIsLogin] = useState(defaultIsLogin);
   const [role, setRole] = useState('learner');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    phone: '',
+  });
+
+  const { login, register, isAuthenticated, role: userRole } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     setIsLogin(defaultIsLogin);
+    setError('');
   }, [defaultIsLogin]);
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = location.state?.from?.pathname;
+      if (from) {
+        navigate(from, { replace: true });
+      } else if (userRole === 'instructor') {
+        navigate('/instructor-dashboard', { replace: true });
+      } else if (userRole === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/learner-dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, userRole, navigate, location]);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (role === 'instructor') {
-      navigate('/instructor-dashboard');
-    } else {
-      navigate('/learner-dashboard');
+    setError('');
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        await login(formData.email, formData.password);
+      } else {
+        await register({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone || undefined,
+          role,
+        });
+      }
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,30 +81,37 @@ const Auth = ({ defaultIsLogin = true }) => {
           </div>
 
           <div className="auth-toggle">
-            <button 
+            <button
               className={`toggle-btn ${isLogin ? 'active' : ''}`}
-              onClick={() => setIsLogin(true)}
+              onClick={() => { setIsLogin(true); setError(''); }}
             >
               Login
             </button>
-            <button 
+            <button
               className={`toggle-btn ${!isLogin ? 'active' : ''}`}
-              onClick={() => setIsLogin(false)}
+              onClick={() => { setIsLogin(false); setError(''); }}
             >
               Register
             </button>
           </div>
 
+          {error && (
+            <div className="auth-error">
+              <AlertCircle size={18} />
+              <span>{error}</span>
+            </div>
+          )}
+
           {!isLogin && (
             <div className="role-selection">
-              <div 
+              <div
                 className={`role-card ${role === 'learner' ? 'selected' : ''}`}
                 onClick={() => setRole('learner')}
               >
                 <User size={24} />
                 <span>Learner</span>
               </div>
-              <div 
+              <div
                 className={`role-card ${role === 'instructor' ? 'selected' : ''}`}
                 onClick={() => setRole('instructor')}
               >
@@ -71,24 +125,62 @@ const Auth = ({ defaultIsLogin = true }) => {
             {!isLogin && (
               <div className="form-group">
                 <label>Full Name</label>
-                <input type="text" placeholder="John Doe" required />
+                <input
+                  type="text"
+                  name="fullName"
+                  placeholder="John Doe"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  required
+                />
               </div>
             )}
             <div className="form-group">
               <label>Email Address</label>
-              <input type="email" placeholder="john@example.com" required />
+              <input
+                type="email"
+                name="email"
+                placeholder="john@example.com"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
             </div>
             <div className="form-group">
               <label>Password</label>
-              <input type="password" placeholder="••••••••" required />
+              <input
+                type="password"
+                name="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                minLength={6}
+              />
             </div>
-            {isLogin && (
-              <div className="text-right mb-3">
-                <a href="#" className="text-sm text-link">Forgot password?</a>
+            {!isLogin && (
+              <div className="form-group">
+                <label>Phone Number <span className="text-muted text-sm">(optional)</span></label>
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="0400 000 000"
+                  value={formData.phone}
+                  onChange={handleChange}
+                />
               </div>
             )}
-            <button type="submit" className="btn btn-primary w-100">
-              {isLogin ? 'Sign In' : 'Create Account'}
+            {isLogin && (
+              <div className="text-right mb-3">
+                <Link to="/forgot-password" className="text-sm text-link">Forgot password?</Link>
+              </div>
+            )}
+            <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+              {loading ? (
+                <><Loader size={18} className="spin-icon" /> Processing...</>
+              ) : (
+                isLogin ? 'Sign In' : 'Create Account'
+              )}
             </button>
           </form>
         </div>

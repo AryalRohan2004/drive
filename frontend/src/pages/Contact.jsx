@@ -1,8 +1,40 @@
-import React from 'react';
-import { MapPin, Phone, Mail, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { MapPin, Phone, Mail, Clock, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { contactApi } from '../services/api';
 import './Contact.css';
 
 const Contact = () => {
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess(false);
+
+    try {
+      await contactApi.submit({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        message: formData.message,
+      });
+      setSuccess(true);
+      setFormData({ name: '', email: '', phone: '', message: '' });
+    } catch (err) {
+      setError(err.message || 'Failed to send message. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="contact-page">
       <section className="section bg-light">
@@ -50,31 +82,46 @@ const Contact = () => {
 
             <div className="contact-form-wrapper">
               <h2 className="h3" style={{ marginBottom: '1.5rem' }}>Send us a message</h2>
-              <form className="contact-form" onSubmit={(e) => e.preventDefault()}>
+
+              {success && (
+                <div className="form-success">
+                  <CheckCircle size={20} />
+                  <span>Message sent successfully! We'll get back to you soon.</span>
+                </div>
+              )}
+              {error && (
+                <div className="form-error">
+                  <AlertCircle size={20} />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <form className="contact-form" onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label htmlFor="name">Full Name</label>
-                  <input type="text" id="name" placeholder="John Doe" />
+                  <input type="text" id="name" name="name" placeholder="John Doe" value={formData.name} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
                   <label htmlFor="email">Email Address</label>
-                  <input type="email" id="email" placeholder="john@example.com" />
+                  <input type="email" id="email" name="email" placeholder="john@example.com" value={formData.email} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
                   <label htmlFor="phone">Phone Number</label>
-                  <input type="tel" id="phone" placeholder="0400 000 000" />
+                  <input type="tel" id="phone" name="phone" placeholder="0400 000 000" value={formData.phone} onChange={handleChange} />
                 </div>
                 <div className="form-group">
                   <label htmlFor="message">Message</label>
-                  <textarea id="message" rows="4" placeholder="How can we help you?"></textarea>
+                  <textarea id="message" name="message" rows="4" placeholder="How can we help you?" value={formData.message} onChange={handleChange} required></textarea>
                 </div>
-                <button type="submit" className="btn btn-primary w-100">Send Message</button>
+                <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+                  {loading ? <><Loader size={18} className="spin-icon" /> Sending...</> : 'Send Message'}
+                </button>
               </form>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Map Section - Filled with aerial image of Adelaide */}
       <section className="map-section">
         <div className="map-image-wrapper">
           <img src="/adelaide_map.png" alt="Aerial view of Adelaide service area" className="map-image" />

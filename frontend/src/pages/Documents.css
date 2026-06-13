@@ -1,0 +1,12 @@
+.docs-page { min-height: 60vh; }
+.docs-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
+.docs-card { background: var(--white); border: 1px solid var(--border-color); border-radius: 1rem; padding: 1.5rem 2rem; margin-bottom: 1rem; }
+.docs-alert { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem; }
+.docs-alert.error { background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; }
+.docs-item { padding: 1.25rem 1.5rem; }
+.docs-item-header { display: flex; justify-content: space-between; align-items: center; }
+.docs-item-info { display: flex; align-items: center; gap: 1rem; }
+.docs-status-badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600; text-transform: capitalize; }
+.docs-rejection { margin-top: 1rem; padding: 0.75rem 1rem; background: #FEF2F2; border-radius: 0.5rem; font-size: 0.875rem; color: #DC2626; }
+.docs-verify-controls { display: flex; gap: 0.75rem; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); flex-wrap: wrap; }
+.docs-verify-controls select, .docs-verify-controls input { padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-size: 0.875rem; }

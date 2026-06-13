@@ -1,0 +1,38 @@
+import { Router } from 'express';
+import health from './health.js';
+import auth from './auth.js';
+import packagesRoute from './packages.js';
+import bookings from './bookings.js';
+import contact from './contact.js';
+import dashboard from './dashboard.js';
+import availability from './availability.js';
+import content from './content.js';
+import users from './users.js';
+import vehicleTypes from './vehicleTypes.js';
+import instructors from './instructors.js';
+import trainingRequests from './trainingRequests.js';
+import learnerDocuments from './learnerDocuments.js';
+import assignments from './assignments.js';
+import transferRequests from './transferRequests.js';
+import matching from './matching.js';
+
+const router = Router();
+
+router.use('/health', health);
+router.use('/auth', auth);
+router.use('/packages', packagesRoute);
+router.use('/bookings', bookings);
+router.use('/contact', contact);
+router.use('/dashboard', dashboard);
+router.use('/availability', availability);
+router.use('/content', content);
+router.use('/users', users);
+router.use('/vehicle-types', vehicleTypes);
+router.use('/instructors', instructors);
+router.use('/training-requests', trainingRequests);
+router.use('/learner-documents', learnerDocuments);
+router.use('/assignments', assignments);
+router.use('/transfer-requests', transferRequests);
+router.use('/matching', matching);
+
+export default router;
