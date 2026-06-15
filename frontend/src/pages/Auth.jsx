@@ -53,6 +53,11 @@ const Auth = ({ defaultIsLogin = true }) => {
       if (isLogin) {
         await login(formData.email, formData.password);
       } else {
+        if (role === 'instructor') {
+          navigate('/instructor-register');
+          return;
+        }
+        
         await register({
           fullName: formData.fullName,
           email: formData.email,
@@ -122,66 +127,77 @@ const Auth = ({ defaultIsLogin = true }) => {
           )}
 
           <form className="auth-form" onSubmit={handleSubmit}>
-            {!isLogin && (
-              <div className="form-group">
-                <label>Full Name</label>
-                <input
-                  type="text"
-                  name="fullName"
-                  placeholder="John Doe"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  required
-                />
+            {(!isLogin && role === 'instructor') ? (
+              <div className="text-center py-4">
+                <p className="mb-4 text-muted">Instructor registration requires a few more details to set up your profile.</p>
+                <button type="submit" className="btn btn-primary w-100">
+                  Continue to Instructor Registration
+                </button>
               </div>
+            ) : (
+              <>
+                {!isLogin && (
+                  <div className="form-group">
+                    <label>Full Name</label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      placeholder="John Doe"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                )}
+                <div className="form-group">
+                  <label>Email Address</label>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="john@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Password</label>
+                  <input
+                    type="password"
+                    name="password"
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    minLength={6}
+                  />
+                </div>
+                {!isLogin && (
+                  <div className="form-group">
+                    <label>Phone Number <span className="text-muted text-sm">(optional)</span></label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      placeholder="0400 000 000"
+                      value={formData.phone}
+                      onChange={handleChange}
+                    />
+                  </div>
+                )}
+                {isLogin && (
+                  <div className="text-right mb-3">
+                    <Link to="/forgot-password" className="text-sm text-link">Forgot password?</Link>
+                  </div>
+                )}
+                <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+                  {loading ? (
+                    <><Loader size={18} className="spin-icon" /> Processing...</>
+                  ) : (
+                    isLogin ? 'Sign In' : 'Create Account'
+                  )}
+                </button>
+              </>
             )}
-            <div className="form-group">
-              <label>Email Address</label>
-              <input
-                type="email"
-                name="email"
-                placeholder="john@example.com"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Password</label>
-              <input
-                type="password"
-                name="password"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                minLength={6}
-              />
-            </div>
-            {!isLogin && (
-              <div className="form-group">
-                <label>Phone Number <span className="text-muted text-sm">(optional)</span></label>
-                <input
-                  type="tel"
-                  name="phone"
-                  placeholder="0400 000 000"
-                  value={formData.phone}
-                  onChange={handleChange}
-                />
-              </div>
-            )}
-            {isLogin && (
-              <div className="text-right mb-3">
-                <Link to="/forgot-password" className="text-sm text-link">Forgot password?</Link>
-              </div>
-            )}
-            <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-              {loading ? (
-                <><Loader size={18} className="spin-icon" /> Processing...</>
-              ) : (
-                isLogin ? 'Sign In' : 'Create Account'
-              )}
-            </button>
           </form>
         </div>
       </div>

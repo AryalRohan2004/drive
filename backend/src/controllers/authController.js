@@ -109,6 +109,7 @@ export const register = asyncHandler(async (req, res) => {
     password,
     phone,
     role,
+    // Basic user fields from old schema
     transmissionPreference,
     preferredVehicleType,
     pickupSuburb,
@@ -124,7 +125,40 @@ export const register = asyncHandler(async (req, res) => {
     baseLatitude,
     baseLongitude,
     serviceRadiusKm,
-  } = parsed.data;
+    // Instructor Profile specific fields
+    languagesSpoken,
+    profilePhotoUrl,
+    accreditationNumber,
+    licenseExpiry,
+    hasWwcc,
+    hasPoliceClearance,
+    servicesOffered,
+    daysAvailable,
+    timesAvailable,
+    pickupLocations,
+    vehicleMakeModel,
+    vehicleTransmission,
+    hasDualControl,
+    vehiclePhotoUrl,
+    price1Hr,
+    price2Hr,
+    priceTestPackage,
+    specialPackages,
+    bankDetails,
+    abn,
+    yearsExperience,
+    studentsTaught,
+    socialLinks,
+    testimonialsText,
+    agreedCommission,
+    agreedTerms,
+    agreedCancellation
+  } = req.body; // use raw req.body for optional fields to avoid huge schema change for now
+
+  if (!parsed.success) {
+    throw new AppError(parsed.error.issues[0]?.message || 'Invalid registration payload', 400);
+  }
+
   const existing = await query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
   if (existing.rowCount > 0) {
     throw new AppError('Email already in use', 409);
@@ -132,51 +166,87 @@ export const register = asyncHandler(async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password, 12);
   const userId = crypto.randomUUID();
-  const result = await query(
-    `INSERT INTO users (
-      id, full_name, email, phone, password_hash, role, status,
-      transmission_preference, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude,
-      pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times,
-      special_requirements, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km,
-      availability
-    )
-     VALUES (
-      $1, $2, $3, $4, $5, $6, 'active',
-      $7, $8, $9, $10, $11,
-      $12, $13, $14, $15::jsonb,
-      $16, $17::text[], $18, $19, $20, $21,
-      '[]'::jsonb
-    )
-     RETURNING ${userSelect}`,
-    [
-      userId,
-      fullName,
-      email.toLowerCase(),
-      phone || null,
-      passwordHash,
-      role,
-      transmissionPreference || null,
-      preferredVehicleType || null,
-      pickupAddress || null,
-      pickupSuburb || null,
-      pickupLatitude ?? null,
-      pickupLongitude ?? null,
-      emergencyContactName || null,
-      emergencyContactPhone || null,
-      JSON.stringify(preferredLessonTimes || []),
-      specialRequirements || null,
-      vehicleTypesSupported || [],
-      baseAddress || null,
-      baseLatitude ?? null,
-      baseLongitude ?? null,
-      serviceRadiusKm ?? 25,
-    ]
-  );
+  
+  // Begin transaction to insert both User and Profile
+  await query('BEGIN');
+  try {
+    const result = await query(
+      `INSERT INTO users (
+        id, full_name, email, phone, password_hash, role, status,
+        transmission_preference, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude,
+        pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times,
+        special_requirements, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km,
+        availability
+      )
+       VALUES (
+        $1, $2, $3, $4, $5, $6, 'active',
+        $7, $8, $9, $10, $11,
+        $12, $13, $14, $15::jsonb,
+        $16, $17::text[], $18, $19, $20, $21,
+        '[]'::jsonb
+      )
+       RETURNING ${userSelect}`,
+      [
+        userId,
+        fullName,
+        email.toLowerCase(),
+        phone || null,
+        passwordHash,
+        role,
+        transmissionPreference || null,
+        preferredVehicleType || null,
+        pickupAddress || null,
+        pickupSuburb || null,
+        pickupLatitude ?? null,
+        pickupLongitude ?? null,
+        emergencyContactName || null,
+        emergencyContactPhone || null,
+        JSON.stringify(preferredLessonTimes || []),
+        specialRequirements || null,
+        vehicleTypesSupported || [],
+        baseAddress || null,
+        baseLatitude ?? null,
+        baseLongitude ?? null,
+        serviceRadiusKm ?? 25,
+      ]
+    );
 
-  const user = mapUser(result.rows[0]);
-  const token = signToken(user.id, user.role);
+    if (role === 'instructor') {
+      const profileId = crypto.randomUUID();
+      await query(
+        `INSERT INTO instructor_profiles (
+          id, user_id, languages_spoken, profile_photo_url, accreditation_number, license_expiry,
+          has_wwcc, has_police_clearance, services_offered, days_available, times_available,
+          pickup_locations, vehicle_make_model, vehicle_transmission, has_dual_control,
+          vehicle_photo_url, price_1hr, price_2hr, price_test_package, special_packages,
+          bank_details, abn, years_experience, students_taught, social_links, testimonials_text,
+          agreed_commission, agreed_terms, agreed_cancellation
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12, $13, $14, $15, $16,
+          $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29
+        )`,
+        [
+          profileId, userId, languagesSpoken || null, profilePhotoUrl || null,
+          accreditationNumber || null, licenseExpiry || null, hasWwcc || false, hasPoliceClearance || false,
+          servicesOffered ? JSON.stringify(servicesOffered) : null, daysAvailable || null, timesAvailable || null,
+          pickupLocations || null, vehicleMakeModel || null, vehicleTransmission || null, hasDualControl || false,
+          vehiclePhotoUrl || null, price1Hr || null, price2Hr || null, priceTestPackage || null, specialPackages || null,
+          bankDetails || null, abn || null, yearsExperience || null, studentsTaught || null, socialLinks || null,
+          testimonialsText || null, agreedCommission || false, agreedTerms || false, agreedCancellation || false
+        ]
+      );
+    }
 
-  res.status(201).json({ user, accessToken: token });
+    await query('COMMIT');
+
+    const user = mapUser(result.rows[0]);
+    const token = signToken(user.id, user.role);
+
+    res.status(201).json({ user, accessToken: token });
+  } catch (err) {
+    await query('ROLLBACK');
+    throw err;
+  }
 });
 
 export const login = asyncHandler(async (req, res) => {

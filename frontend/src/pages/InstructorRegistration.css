@@ -1,0 +1,219 @@
+.instructor-reg-page {
+  padding: 4rem 0 8rem;
+  min-height: calc(100vh - 80px);
+}
+
+.instructor-reg-card {
+  background: var(--white);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-lg);
+  padding: 3rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Stepper Styles */
+.stepper {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3rem;
+  position: relative;
+}
+
+.stepper::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  height: 2px;
+  background: var(--border-color);
+  z-index: 0;
+}
+
+.step-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 20%;
+}
+
+.step-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all var(--transition-smooth);
+}
+
+.step-item.active .step-circle {
+  border-color: var(--primary-blue);
+  background: var(--primary-blue);
+  color: var(--white);
+}
+
+.step-item.completed .step-circle {
+  border-color: var(--success-green);
+  background: var(--success-green);
+  color: var(--white);
+}
+
+.step-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.step-item.active .step-label {
+  color: var(--primary-blue);
+  font-weight: 700;
+}
+
+/* Form Styles */
+.reg-section-title {
+  margin-bottom: 2rem;
+  color: var(--primary-blue);
+  border-bottom: 2px solid var(--light-gray);
+  padding-bottom: 0.5rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--black);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: border-color var(--transition-smooth);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+}
+
+/* Checkbox Grids */
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.checkbox-item input[type="checkbox"] {
+  width: auto;
+  margin-top: 0.25rem;
+}
+
+.checkbox-item label {
+  font-weight: 400;
+  margin-bottom: 0;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+/* File Upload */
+.file-upload-box {
+  border: 2px dashed var(--border-color);
+  border-radius: 0.5rem;
+  padding: 2rem;
+  text-align: center;
+  background: var(--light-gray);
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+}
+
+.file-upload-box:hover {
+  border-color: var(--primary-blue);
+  background: rgba(30, 58, 138, 0.05);
+}
+
+.file-upload-box input[type="file"] {
+  display: none;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--black);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+}
+
+.btn-secondary:hover {
+  background: var(--light-gray);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .instructor-reg-card {
+    padding: 1.5rem;
+  }
+  
+  .stepper {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .stepper::before {
+    display: none;
+  }
+  
+  .step-item {
+    width: 30%;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

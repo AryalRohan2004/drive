@@ -13,18 +13,18 @@ const AnimatedSection = ({ children, className = "" }) => {
   );
 };
 
-const successImages = [
-  '/Sucess/s2.jpg',
-  '/Sucess/s3.jpg',
-  '/Sucess/s4.jpg',
-  '/Sucess/s5.jpg',
-  '/Sucess/s6.jpg',
-  '/Sucess/s7.jpg',
-  '/Sucess/s9.jpg',
-  '/Sucess/s10.jpg',
-  '/Sucess/s11.jpg',
-  '/Sucess/s12.jpg',
-  '/Sucess/715771190_122184341390851469_5977678775086273719_n.jpg'
+const successStories = [
+  { src: '/Sucess/s2.jpg', name: 'Aarav', message: 'Passed first time! Highly recommend Santosh.' },
+  { src: '/Sucess/s3.jpg', name: 'Laxmi', message: 'Great instructor, very patient.' },
+  { src: '/Sucess/s4.jpg', name: 'Marina', message: 'Helped me overcome my driving anxiety!' },
+  { src: '/Sucess/s5.jpg', name: 'Sampradha', message: 'Clear instructions and friendly environment.' },
+  { src: '/Sucess/s6.jpg', name: 'Ravi', message: 'Converted my overseas license easily.' },
+  { src: '/Sucess/s7.jpg', name: 'Priya', message: 'The mock tests were so helpful.' },
+  { src: '/Sucess/s9.jpg', name: 'David', message: 'Best driving school in Adelaide.' },
+  { src: '/Sucess/s10.jpg', name: 'Sarah', message: 'Passed with zero errors!' },
+  { src: '/Sucess/s11.jpg', name: 'Michael', message: 'Very professional and punctual.' },
+  { src: '/Sucess/s12.jpg', name: 'Emma', message: "Got my P's on the first attempt." },
+  { src: '/Sucess/715771190_122184341390851469_5977678775086273719_n.jpg', name: 'James', message: 'Thanks for all the help and support.' }
 ];
 
 const testimonials = [
@@ -254,9 +254,13 @@ const Home = () => {
           </div>
           
           <div className="success-grid">
-            {successImages.map((imgSrc, idx) => (
+            {successStories.map((story, idx) => (
               <div className="success-card" key={idx}>
-                <img src={imgSrc} alt={`Successful student ${idx + 1}`} loading="lazy" />
+                <img src={story.src} alt={`Successful student ${story.name}`} loading="lazy" />
+                <div className="success-overlay">
+                  <p className="success-message">"{story.message}"</p>
+                  <span className="success-name">- {story.name}</span>
+                </div>
               </div>
             ))}
           </div>

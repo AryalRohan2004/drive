@@ -63,8 +63,47 @@ model User {
   transferRequestsAsStudent TransferRequest[]     @relation("TransferStudent")
   transferRequestsFromInstructor TransferRequest[] @relation("TransferFromInstructor")
   transferRequestsToInstructor TransferRequest[]  @relation("TransferToInstructor")
+  instructorProfile        InstructorProfile?
 
   @@map("users")
+}
+
+model InstructorProfile {
+  id                   String   @id @default(uuid())
+  userId               String   @unique @map("user_id")
+  languagesSpoken      String?  @map("languages_spoken")
+  profilePhotoUrl      String?  @map("profile_photo_url")
+  accreditationNumber  String?  @map("accreditation_number")
+  licenseExpiry        DateTime? @map("license_expiry") @db.Date
+  hasWwcc              Boolean  @default(false) @map("has_wwcc")
+  hasPoliceClearance   Boolean  @default(false) @map("has_police_clearance")
+  servicesOffered      Json?    @map("services_offered")
+  daysAvailable        String?  @map("days_available")
+  timesAvailable       String?  @map("times_available")
+  pickupLocations      String?  @map("pickup_locations")
+  vehicleMakeModel     String?  @map("vehicle_make_model")
+  vehicleTransmission  String?  @map("vehicle_transmission")
+  hasDualControl       Boolean  @default(false) @map("has_dual_control")
+  vehiclePhotoUrl      String?  @map("vehicle_photo_url")
+  price1Hr             Decimal? @db.Decimal(10, 2) @map("price_1hr")
+  price2Hr             Decimal? @db.Decimal(10, 2) @map("price_2hr")
+  priceTestPackage     Decimal? @db.Decimal(10, 2) @map("price_test_package")
+  specialPackages      String?  @map("special_packages")
+  bankDetails          String?  @map("bank_details")
+  abn                  String?
+  yearsExperience      Int?     @map("years_experience")
+  studentsTaught       Int?     @map("students_taught")
+  socialLinks          String?  @map("social_links")
+  testimonialsText     String?  @map("testimonials_text")
+  agreedCommission     Boolean  @default(false) @map("agreed_commission")
+  agreedTerms          Boolean  @default(false) @map("agreed_terms")
+  agreedCancellation   Boolean  @default(false) @map("agreed_cancellation")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("instructor_profiles")
 }
 
 model PasswordResetToken {

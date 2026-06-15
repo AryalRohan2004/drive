@@ -13,6 +13,7 @@ import Booking from './pages/Booking';
 import Auth from './pages/Auth';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import InstructorRegistration from './pages/InstructorRegistration';
 import LearnerDashboard from './pages/LearnerDashboard';
 import InstructorDashboard from './pages/InstructorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -66,6 +67,7 @@ function App() {
           {/* Auth pages */}
           <Route path="login" element={<Auth defaultIsLogin={true} />} />
           <Route path="signup" element={<Auth defaultIsLogin={false} />} />
+          <Route path="instructor-register" element={<InstructorRegistration />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route path="reset-password" element={<ResetPassword />} />
 
