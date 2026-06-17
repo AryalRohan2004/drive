@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { authApi } from '../services/api';
+import { toast } from 'react-hot-toast';
 import './Auth.css';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,8 +17,9 @@ const ForgotPassword = () => {
     try {
       await authApi.forgotPassword({ email });
       setSuccess(true);
+      toast.success('Reset link sent!');
     } catch (err) {
-      setError(err.message || 'Failed to send reset link.');
+      toast.error(err.message || 'Failed to send reset link.');
     } finally {
       setLoading(false);
     }
@@ -45,12 +46,6 @@ const ForgotPassword = () => {
             </div>
           ) : (
             <>
-              {error && (
-                <div className="auth-error">
-                  <AlertCircle size={18} />
-                  <span>{error}</span>
-                </div>
-              )}
               <form className="auth-form" onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Email Address</label>

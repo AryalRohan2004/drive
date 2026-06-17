@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { User, Shield, Car, AlertCircle, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 import './Auth.css';
 
 const Auth = ({ defaultIsLogin = true }) => {
   const [isLogin, setIsLogin] = useState(defaultIsLogin);
   const [role, setRole] = useState('learner');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -22,7 +22,6 @@ const Auth = ({ defaultIsLogin = true }) => {
 
   useEffect(() => {
     setIsLogin(defaultIsLogin);
-    setError('');
   }, [defaultIsLogin]);
 
   useEffect(() => {
@@ -46,12 +45,12 @@ const Auth = ({ defaultIsLogin = true }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
       if (isLogin) {
         await login(formData.email, formData.password);
+        toast.success('Successfully logged in!');
       } else {
         if (role === 'instructor') {
           navigate('/instructor-register');
@@ -65,9 +64,10 @@ const Auth = ({ defaultIsLogin = true }) => {
           phone: formData.phone || undefined,
           role,
         });
+        toast.success('Account created successfully!');
       }
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.');
+      toast.error(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -88,24 +88,17 @@ const Auth = ({ defaultIsLogin = true }) => {
           <div className="auth-toggle">
             <button
               className={`toggle-btn ${isLogin ? 'active' : ''}`}
-              onClick={() => { setIsLogin(true); setError(''); }}
+              onClick={() => { setIsLogin(true); }}
             >
               Login
             </button>
             <button
               className={`toggle-btn ${!isLogin ? 'active' : ''}`}
-              onClick={() => { setIsLogin(false); setError(''); }}
+              onClick={() => { setIsLogin(false); }}
             >
               Register
             </button>
           </div>
-
-          {error && (
-            <div className="auth-error">
-              <AlertCircle size={18} />
-              <span>{error}</span>
-            </div>
-          )}
 
           {!isLogin && (
             <div className="role-selection">

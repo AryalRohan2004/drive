@@ -8,12 +8,43 @@ import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendEmail } from '../services/emailService.js';
 
+const nameRegex = /^[A-Za-z][A-Za-z\s.'-]{1,59}$/;
+const mobileRegex = /^[0-9+\-\s()]{8,15}$/;
+const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,32}$/;
+const urlRegex = /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}(\/\S*)?$/i;
+const abnRegex = /^(\d{2}\s?\d{3}\s?\d{3}\s?\d{3}|\d{11})$/;
+
 const registerSchema = z.object({
-  fullName: z.string().min(2),
+  fullName: z.string().min(2).max(60).regex(nameRegex, 'Use letters only, with spaces or basic punctuation.'),
   email: z.string().email(),
-  password: z.string().min(8),
-  phone: z.string().optional().nullable(),
+  password: z.string().min(8).max(32).regex(passwordRegex, 'Password must include at least one letter and one number.'),
+  phone: z.string().trim().regex(mobileRegex, 'Enter a valid phone number with 8 to 15 digits.').optional().nullable(),
   role: z.enum(['learner', 'instructor']).default('learner'),
+  languages: z.string().trim().min(2).max(80).optional().nullable(),
+  bio: z.string().trim().min(20).max(500).optional().nullable(),
+  accreditationNo: z.string().trim().min(4).max(30).optional().nullable(),
+  licenseNo: z.string().trim().min(5).max(30).optional().nullable(),
+  licenseExpiry: z.string().trim().optional().nullable(),
+  suburbsCovered: z.string().trim().min(3).max(120).optional().nullable(),
+  daysAvailable: z.string().trim().min(3).max(60).optional().nullable(),
+  timesAvailable: z.string().trim().min(3).max(60).optional().nullable(),
+  pickupLocations: z.string().trim().min(3).max(120).optional().nullable(),
+  vehicleMakeModel: z.string().trim().min(2).max(60).optional().nullable(),
+  vehicleTransmission: z.string().trim().optional().nullable(),
+  price1Hr: z.union([z.coerce.number().gt(0).lte(1000), z.literal('')]).optional().nullable(),
+  price2Hr: z.union([z.coerce.number().gt(0).lte(1000), z.literal('')]).optional().nullable(),
+  priceTestPackage: z.union([z.coerce.number().gt(0).lte(1000), z.literal('')]).optional().nullable(),
+  specialPackages: z.string().trim().max(120).optional().nullable(),
+  bankDetails: z.string().trim().min(6).max(120).optional().nullable(),
+  abn: z.string().trim().regex(abnRegex, 'Enter a valid 11-digit ABN.').optional().nullable(),
+  yearsExperience: z.union([z.coerce.number().int().min(0).max(80), z.literal('')]).optional().nullable(),
+  studentsTaught: z.union([z.coerce.number().int().min(0).max(100000), z.literal('')]).optional().nullable(),
+  testimonials: z.string().trim().max(1000).optional().nullable(),
+  socialLinks: z.string().trim().regex(urlRegex, 'Enter a valid social profile link.').optional().nullable(),
+  agreeCommission: z.boolean().refine(Boolean, 'Please accept the platform commission fee.').optional(),
+  agreeTerms: z.boolean().refine(Boolean, 'Please accept the instructor terms and conditions.').optional(),
+  agreeCancellation: z.boolean().refine(Boolean, 'Please accept the cancellation policy.').optional(),
+  // legacy fields still accepted
   transmissionPreference: z.string().optional().nullable(),
   preferredVehicleType: z.string().optional().nullable(),
   pickupSuburb: z.string().optional().nullable(),
@@ -29,7 +60,7 @@ const registerSchema = z.object({
   baseLatitude: z.coerce.number().optional().nullable(),
   baseLongitude: z.coerce.number().optional().nullable(),
   serviceRadiusKm: z.coerce.number().int().min(0).optional(),
-});
+}).passthrough();
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -109,6 +140,30 @@ export const register = asyncHandler(async (req, res) => {
     password,
     phone,
     role,
+    languages,
+    bio,
+    accreditationNo,
+    licenseNo,
+    licenseExpiry,
+    suburbsCovered,
+    daysAvailable,
+    timesAvailable,
+    pickupLocations,
+    vehicleMakeModel,
+    vehicleTransmission,
+    price1Hr,
+    price2Hr,
+    priceTestPackage,
+    specialPackages,
+    bankDetails,
+    abn,
+    yearsExperience,
+    studentsTaught,
+    testimonials,
+    socialLinks,
+    agreeCommission,
+    agreeTerms,
+    agreeCancellation,
     // Basic user fields from old schema
     transmissionPreference,
     preferredVehicleType,
@@ -129,30 +184,12 @@ export const register = asyncHandler(async (req, res) => {
     languagesSpoken,
     profilePhotoUrl,
     accreditationNumber,
-    licenseExpiry,
     hasWwcc,
     hasPoliceClearance,
     servicesOffered,
-    daysAvailable,
-    timesAvailable,
-    pickupLocations,
-    vehicleMakeModel,
-    vehicleTransmission,
     hasDualControl,
     vehiclePhotoUrl,
-    price1Hr,
-    price2Hr,
-    priceTestPackage,
-    specialPackages,
-    bankDetails,
-    abn,
-    yearsExperience,
-    studentsTaught,
-    socialLinks,
     testimonialsText,
-    agreedCommission,
-    agreedTerms,
-    agreedCancellation
   } = req.body; // use raw req.body for optional fields to avoid huge schema change for now
 
   if (!parsed.success) {
@@ -179,7 +216,7 @@ export const register = asyncHandler(async (req, res) => {
         availability
       )
        VALUES (
-        $1, $2, $3, $4, $5, $6, 'active',
+        $1, $2, $3, $4, $5, $6, $22,
         $7, $8, $9, $10, $11,
         $12, $13, $14, $15::jsonb,
         $16, $17::text[], $18, $19, $20, $21,
@@ -208,7 +245,8 @@ export const register = asyncHandler(async (req, res) => {
         baseLatitude ?? null,
         baseLongitude ?? null,
         serviceRadiusKm ?? 25,
-      ]
+        role === 'instructor' ? 'pending' : 'active',
+    ]
     );
 
     if (role === 'instructor') {
@@ -226,13 +264,13 @@ export const register = asyncHandler(async (req, res) => {
           $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29
         )`,
         [
-          profileId, userId, languagesSpoken || null, profilePhotoUrl || null,
-          accreditationNumber || null, licenseExpiry || null, hasWwcc || false, hasPoliceClearance || false,
+          profileId, userId, languagesSpoken || languages || null, profilePhotoUrl || null,
+          accreditationNumber || accreditationNo || null, licenseExpiry || null, hasWwcc || false, hasPoliceClearance || false,
           servicesOffered ? JSON.stringify(servicesOffered) : null, daysAvailable || null, timesAvailable || null,
           pickupLocations || null, vehicleMakeModel || null, vehicleTransmission || null, hasDualControl || false,
           vehiclePhotoUrl || null, price1Hr || null, price2Hr || null, priceTestPackage || null, specialPackages || null,
           bankDetails || null, abn || null, yearsExperience || null, studentsTaught || null, socialLinks || null,
-          testimonialsText || null, agreedCommission || false, agreedTerms || false, agreedCancellation || false
+          testimonialsText || testimonials || null, agreeCommission ?? false, agreeTerms ?? false, agreeCancellation ?? false
         ]
       );
     }
@@ -269,6 +307,10 @@ export const login = asyncHandler(async (req, res) => {
   const ok = await bcrypt.compare(password, userRow.password_hash);
   if (!ok) {
     throw new AppError('Invalid email or password', 401);
+  }
+
+  if (userRow.status === 'pending') {
+    throw new AppError('Your account is pending admin approval.', 403);
   }
 
   if (userRow.status !== 'active') {

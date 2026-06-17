@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Lock, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { authApi } from '../services/api';
+import { toast } from 'react-hot-toast';
 import './Auth.css';
 
 const ResetPassword = () => {
@@ -28,8 +29,9 @@ const ResetPassword = () => {
     try {
       await authApi.resetPassword({ token, password });
       setSuccess(true);
+      toast.success('Password successfully reset!');
     } catch (err) {
-      setError(err.message || 'Failed to reset password. The link may be expired.');
+      toast.error(err.message || 'Failed to reset password. The link may be expired.');
     } finally {
       setLoading(false);
     }

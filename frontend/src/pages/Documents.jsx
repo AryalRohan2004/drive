@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Upload, CheckCircle, XCircle, Clock, Loader, AlertCircle, Eye } from 'lucide-react';
 import { learnerDocumentsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 import './Documents.css';
 
 const Documents = () => {
   const { role } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadData, setUploadData] = useState({ documentType: '', fileUrl: '' });
@@ -21,7 +21,7 @@ const Documents = () => {
         const data = await learnerDocumentsApi.getMine();
         setDocuments(data.documents || data || []);
       } catch (err) {
-        setError(err.message || 'Failed to load documents');
+        toast.error(err.message || 'Failed to load documents');
       } finally {
         setLoading(false);
       }
@@ -37,8 +37,9 @@ const Documents = () => {
       setDocuments(prev => [...prev, res.document || res]);
       setUploadData({ documentType: '', fileUrl: '' });
       setShowUpload(false);
+      toast.success('Document uploaded successfully!');
     } catch (err) {
-      alert(err.message || 'Failed to upload document');
+      toast.error(err.message || 'Failed to upload document');
     } finally {
       setUploading(false);
     }
@@ -52,8 +53,9 @@ const Documents = () => {
         rejectionReason: verifyData.status === 'rejected' ? verifyData.rejectionReason : undefined,
       });
       setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status: verifyData.status } : d));
+      toast.success('Document status updated!');
     } catch (err) {
-      alert(err.message || 'Failed to update status');
+      toast.error(err.message || 'Failed to update status');
     } finally {
       setActionLoading(null);
     }
@@ -89,8 +91,6 @@ const Documents = () => {
             </button>
           )}
         </div>
-
-        {error && <div className="docs-alert error"><AlertCircle size={18} /><span>{error}</span></div>}
 
         {showUpload && (
           <div className="docs-card" style={{ marginBottom: '2rem' }}>

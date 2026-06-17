@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Package, Mail, Car, FileText, Loader, AlertCircle, CheckCircle, Trash2, Edit, Plus, X, Save, Search } from 'lucide-react';
-import { usersApi, contactApi, packagesApi, vehicleTypesApi, contentApi } from '../services/api';
+import { Car, CheckCircle, Edit, FileText, Loader, Mail, Package, Plus, Save, Search, Trash2, Users, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
+import { contactApi, contentApi, packagesApi, usersApi, vehicleTypesApi } from '../services/api';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -49,7 +50,7 @@ const UsersTab = () => {
   const [editData, setEditData] = useState({});
 
   useEffect(() => {
-    usersApi.list().then(d => setUsers(d.users || d || [])).catch(() => {}).finally(() => setLoading(false));
+    usersApi.list().then(d => setUsers(d.users || d || [])).catch((err) => toast.error(err.message || 'Failed to load users')).finally(() => setLoading(false));
   }, []);
 
   const handleSave = async (id) => {
@@ -57,7 +58,15 @@ const UsersTab = () => {
       await usersApi.updateById(id, editData);
       setUsers(prev => prev.map(u => u.id === id ? { ...u, ...editData } : u));
       setEditingId(null);
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast.error(err.message || 'Failed to save user'); }
+  };
+
+  const handleApprove = async (id) => {
+    try {
+      await usersApi.updateById(id, { status: 'active' });
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active' } : u));
+      toast.success('Instructor approved!');
+    } catch (err) { toast.error(err.message || 'Failed to approve instructor'); }
   };
 
   const filtered = users.filter(u =>
@@ -102,6 +111,7 @@ const UsersTab = () => {
                 <td>
                   {editingId === u.id ? (
                     <select value={editData.status || u.status} onChange={(e) => setEditData({ ...editData, status: e.target.value })}>
+                      <option value="pending">Pending</option>
                       <option value="active">Active</option>
                       <option value="suspended">Suspended</option>
                       <option value="inactive">Inactive</option>
@@ -117,7 +127,18 @@ const UsersTab = () => {
                       <button className="admin-btn cancel" onClick={() => setEditingId(null)}><X size={14} /></button>
                     </div>
                   ) : (
-                    <button className="admin-btn edit" onClick={() => { setEditingId(u.id); setEditData({ role: u.role, status: u.status }); }}><Edit size={14} /></button>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <button className="admin-btn edit" onClick={() => { setEditingId(u.id); setEditData({ role: u.role, status: u.status }); }} title="Edit User"><Edit size={14} /></button>
+                      {u.role === 'instructor' && u.status === 'pending' && (
+                        <button
+                          className="admin-btn save"
+                          onClick={() => handleApprove(u.id)}
+                          title="Approve Instructor"
+                        >
+                          <CheckCircle size={14} />
+                        </button>
+                      )}
+                    </div>
                   )}
                 </td>
               </tr>
@@ -135,14 +156,14 @@ const ContactsTab = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    contactApi.list().then(d => setContacts(d.contacts || d || [])).catch(() => {}).finally(() => setLoading(false));
+    contactApi.list().then(d => setContacts(d.contactRequests || d.contacts || d || [])).catch((err) => toast.error(err.message || 'Failed to load contacts')).finally(() => setLoading(false));
   }, []);
 
   const handleStatusChange = async (id, status) => {
     try {
       await contactApi.update(id, { status });
       setContacts(prev => prev.map(c => c.id === id ? { ...c, status } : c));
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast.error(err.message || 'Failed to update contact status'); }
   };
 
   if (loading) return <AdminLoader />;
@@ -162,12 +183,13 @@ const ContactsTab = () => {
                   <td>{c.name}</td>
                   <td className="text-muted">{c.email}</td>
                   <td className="text-sm" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.message}</td>
-                  <td><span className={`admin-status ${c.status || 'pending'}`}>{c.status || 'pending'}</span></td>
+                  <td><span className={`admin-status ${c.status || 'new'}`}>{c.status || 'new'}</span></td>
                   <td>
-                    <select value={c.status || 'pending'} onChange={(e) => handleStatusChange(c.id, e.target.value)} style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)' }}>
-                      <option value="pending">Pending</option>
-                      <option value="reviewed">Reviewed</option>
-                      <option value="resolved">Resolved</option>
+                    <select value={c.status || 'new'} onChange={(e) => handleStatusChange(c.id, e.target.value)} style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)' }}>
+                      <option value="new">New</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="replied">Replied</option>
+                      <option value="closed">Closed</option>
                     </select>
                   </td>
                 </tr>
@@ -185,18 +207,18 @@ const PackagesTab = () => {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ name: '', code: '', description: '', price: '', durationMinutes: '', totalLessons: '' });
+  const [formData, setFormData] = useState({ name: '', code: '', description: '', price: '', durationMinutes: '', totalLessons: '', category: 'single' });
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    packagesApi.list().then(d => setPackages(d.packages || d || [])).catch(() => {}).finally(() => setLoading(false));
+    packagesApi.list().then(d => setPackages(d.packages || d || [])).catch((err) => toast.error(err.message || 'Failed to load packages')).finally(() => setLoading(false));
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const payload = { ...formData, price: Number(formData.price), durationMinutes: Number(formData.durationMinutes) || undefined, totalLessons: Number(formData.totalLessons) || undefined };
+    const payload = { ...formData, price: Number(formData.price), durationMinutes: Number(formData.durationMinutes) || undefined, totalLessons: Number(formData.totalLessons) || undefined, category: formData.category || 'single' };
     try {
       if (editingId) {
         await packagesApi.update(editingId, payload);
@@ -207,8 +229,8 @@ const PackagesTab = () => {
       }
       setShowForm(false);
       setEditingId(null);
-      setFormData({ name: '', code: '', description: '', price: '', durationMinutes: '', totalLessons: '' });
-    } catch (err) { alert(err.message); }
+      setFormData({ name: '', code: '', description: '', price: '', durationMinutes: '', totalLessons: '', category: 'single' });
+    } catch (err) { toast.error(err.message || 'Failed to save package'); }
     finally { setSaving(false); }
   };
 
@@ -217,7 +239,8 @@ const PackagesTab = () => {
     try {
       await packagesApi.delete(id);
       setPackages(prev => prev.filter(p => p.id !== id));
-    } catch (err) { alert(err.message); }
+      toast.success('Package deleted');
+    } catch (err) { toast.error(err.message || 'Failed to delete package'); }
   };
 
   if (loading) return <AdminLoader />;
@@ -226,7 +249,7 @@ const PackagesTab = () => {
     <div className="admin-card">
       <div className="admin-card-header">
         <h3 className="h4">Packages ({packages.length})</h3>
-        <button className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }} onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({ name: '', code: '', description: '', price: '', durationMinutes: '', totalLessons: '' }); }}>
+        <button className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }} onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({ name: '', code: '', description: '', price: '', durationMinutes: '', totalLessons: '', category: 'single' }); }}>
           {showForm ? 'Cancel' : <><Plus size={16} /> Add Package</>}
         </button>
       </div>
@@ -238,6 +261,14 @@ const PackagesTab = () => {
             <div className="form-group"><label>Code</label><input value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} required placeholder="e.g. single-lesson" /></div>
             <div className="form-group"><label>Price ($)</label><input type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required /></div>
             <div className="form-group"><label>Total Lessons</label><input type="number" value={formData.totalLessons} onChange={(e) => setFormData({ ...formData, totalLessons: e.target.value })} /></div>
+            <div className="form-group"><label>Category</label>
+              <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} required>
+                <option value="single">Single</option>
+                <option value="package">Package</option>
+                <option value="overseas">Overseas</option>
+                <option value="test">Test</option>
+              </select>
+            </div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Description</label><input value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} /></div>
           </div>
           <button type="submit" className="btn btn-primary" disabled={saving} style={{ marginTop: '1rem' }}>
@@ -258,7 +289,7 @@ const PackagesTab = () => {
                 <td>{p.totalLessons || '—'}</td>
                 <td>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="admin-btn edit" onClick={() => { setEditingId(p.id); setFormData({ name: p.name, code: p.code, description: p.description || '', price: p.price || p.priceAud || '', durationMinutes: p.durationMinutes || '', totalLessons: p.totalLessons || '' }); setShowForm(true); }}><Edit size={14} /></button>
+                    <button className="admin-btn edit" onClick={() => { setEditingId(p.id); setFormData({ name: p.name, code: p.code, description: p.description || '', price: p.price || p.priceAud || '', durationMinutes: p.durationMinutes || '', totalLessons: p.totalLessons || '', category: p.category || 'single' }); setShowForm(true); }}><Edit size={14} /></button>
                     <button className="admin-btn delete" onClick={() => handleDelete(p.id)}><Trash2 size={14} /></button>
                   </div>
                 </td>
@@ -281,7 +312,7 @@ const VehicleTypesTab = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    vehicleTypesApi.list().then(d => setTypes(d.vehicleTypes || d || [])).catch(() => {}).finally(() => setLoading(false));
+    vehicleTypesApi.list().then(d => setTypes(d.vehicleTypes || d || [])).catch((err) => toast.error(err.message || 'Failed to load vehicle types')).finally(() => setLoading(false));
   }, []);
 
   const handleSubmit = async (e) => {
@@ -298,7 +329,7 @@ const VehicleTypesTab = () => {
       setShowForm(false);
       setEditingId(null);
       setFormData({ name: '', code: '', description: '' });
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast.error(err.message || 'Failed to save vehicle type'); }
     finally { setSaving(false); }
   };
 
@@ -353,7 +384,7 @@ const ContentTab = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    contentApi.list().then(d => setPages(d.pages || d.content || d || [])).catch(() => {}).finally(() => setLoading(false));
+    contentApi.list().then(d => setPages(d.contentPages || d.pages || d.content || d || [])).catch((err) => toast.error(err.message || 'Failed to load content')).finally(() => setLoading(false));
   }, []);
 
   const handleSubmit = async (e) => {
@@ -370,7 +401,7 @@ const ContentTab = () => {
       setShowForm(false);
       setEditingId(null);
       setFormData({ slug: '', title: '', content: '', seoTitle: '', seoDescription: '' });
-    } catch (err) { alert(err.message); }
+    } catch (err) { toast.error(err.message || 'Failed to save content'); }
     finally { setSaving(false); }
   };
 

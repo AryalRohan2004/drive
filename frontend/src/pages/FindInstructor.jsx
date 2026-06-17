@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, MapPin, Star, Clock, Car, Loader, Navigation } from 'lucide-react';
 import { matchingApi, instructorsApi } from '../services/api';
+import { toast } from 'react-hot-toast';
 import './FindInstructor.css';
 
 const FindInstructor = () => {
@@ -8,13 +9,11 @@ const FindInstructor = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [error, setError] = useState('');
 
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!suburb.trim()) return;
     setLoading(true);
-    setError('');
     setSearched(true);
     try {
       const data = await matchingApi.nearby(`suburb=${encodeURIComponent(suburb)}`);
@@ -24,7 +23,7 @@ const FindInstructor = () => {
         const data = await instructorsApi.nearby(`suburb=${encodeURIComponent(suburb)}`);
         setResults(data.instructors || data || []);
       } catch {
-        setError(err.message || 'Failed to search. The backend may not be running.');
+        toast.error(err.message || 'Failed to search. The backend may not be running.');
         setResults([]);
       }
     } finally {
@@ -34,11 +33,10 @@ const FindInstructor = () => {
 
   const handleFindNearMe = () => {
     if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser.');
+      toast.error('Geolocation is not supported by your browser.');
       return;
     }
     setLoading(true);
-    setError('');
     setSearched(true);
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -46,14 +44,14 @@ const FindInstructor = () => {
           const data = await matchingApi.nearby(`lat=${position.coords.latitude}&lng=${position.coords.longitude}`);
           setResults(data.instructors || data || []);
         } catch (err) {
-          setError(err.message || 'Failed to find nearby instructors.');
+          toast.error(err.message || 'Failed to find nearby instructors.');
           setResults([]);
         } finally {
           setLoading(false);
         }
       },
       () => {
-        setError('Unable to get your location. Please search by suburb instead.');
+        toast.error('Unable to get your location. Please search by suburb instead.');
         setLoading(false);
       }
     );
@@ -87,12 +85,6 @@ const FindInstructor = () => {
             <Navigation size={16} /> Use My Location
           </button>
         </div>
-
-        {error && (
-          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '0.75rem', padding: '1rem 1.5rem', marginBottom: '1.5rem', color: '#DC2626', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            {error}
-          </div>
-        )}
 
         {loading && (
           <div className="text-center" style={{ padding: '3rem' }}>

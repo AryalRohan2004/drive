@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './layouts/Layout';
@@ -46,6 +47,7 @@ function ScrollToTop() {
 function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-center" />
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<Layout />}>

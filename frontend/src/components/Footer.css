@@ -41,7 +41,8 @@
 }
 
 .footer-logo-image {
-  height: 48px;
+  background-color: white;
+  height: 80px;
   width: auto;
   object-fit: contain;
 }

@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Send, CheckCircle, XCircle, MessageCircle, Loader, AlertCircle, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { trainingRequestsApi, instructorsApi, vehicleTypesApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 import './TrainingRequests.css';
 
 const TrainingRequests = () => {
   const { role } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [actionLoading, setActionLoading] = useState(null);
@@ -24,8 +24,6 @@ const TrainingRequests = () => {
     message: '',
   });
   const [submitting, setSubmitting] = useState(false);
-  const [formSuccess, setFormSuccess] = useState('');
-  const [formError, setFormError] = useState('');
   const [responseMsg, setResponseMsg] = useState('');
 
   useEffect(() => {
@@ -38,7 +36,7 @@ const TrainingRequests = () => {
         setRequests(reqRes.trainingRequests || reqRes || []);
         setVehicleTypes(vtRes.vehicleTypes || vtRes || []);
       } catch (err) {
-        setError(err.message || 'Failed to load training requests');
+        toast.error(err.message || 'Failed to load training requests');
       } finally {
         setLoading(false);
       }
@@ -51,16 +49,14 @@ const TrainingRequests = () => {
   const handleCreateRequest = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setFormError('');
-    setFormSuccess('');
     try {
       const res = await trainingRequestsApi.create(formData);
-      setFormSuccess('Training request sent successfully!');
+      toast.success('Training request sent successfully!');
       setRequests(prev => [res.trainingRequest || res, ...prev]);
       setFormData({ instructorId: '', vehicleType: '', preferredDate: '', preferredTime: '', pickupAddress: '', pickupSuburb: '', message: '' });
       setShowForm(false);
     } catch (err) {
-      setFormError(err.message || 'Failed to create request.');
+      toast.error(err.message || 'Failed to create request.');
     } finally {
       setSubmitting(false);
     }
@@ -78,8 +74,9 @@ const TrainingRequests = () => {
         r.id === id ? { ...r, status: action === 'accept' ? 'accepted' : action === 'reject' ? 'rejected' : 'more_info' } : r
       ));
       setResponseMsg('');
+      toast.success(`Request ${action}ed`);
     } catch (err) {
-      alert(err.message || `Failed to ${action}`);
+      toast.error(err.message || `Failed to ${action}`);
     } finally {
       setActionLoading(null);
     }
@@ -111,14 +108,10 @@ const TrainingRequests = () => {
           )}
         </div>
 
-        {formSuccess && <div className="tr-alert success"><CheckCircle size={18} /><span>{formSuccess}</span></div>}
-        {error && <div className="tr-alert error"><AlertCircle size={18} /><span>{error}</span></div>}
-
         {/* Learner: Create Request Form */}
         {showForm && role === 'learner' && (
           <div className="tr-card" style={{ marginBottom: '2rem' }}>
             <h3 className="h4" style={{ marginBottom: '1.5rem' }}>Send Training Request</h3>
-            {formError && <div className="tr-alert error" style={{ marginBottom: '1rem' }}><AlertCircle size={18} /><span>{formError}</span></div>}
             <form onSubmit={handleCreateRequest}>
               <div className="tr-form-grid">
                 <div className="form-group">

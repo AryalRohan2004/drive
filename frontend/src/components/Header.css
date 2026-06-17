@@ -11,6 +11,20 @@
   align-items: center;
   justify-content: space-between;
   height: 80px;
+  padding: 0 2rem;
+  width: 100%;
+}
+
+@media (min-width: 1400px) {
+  .header-container {
+    padding: 0 4rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-container {
+    padding: 0 1.5rem;
+  }
 }
 
 .logo {
@@ -24,7 +38,7 @@
 }
 
 .logo-image {
-  height: 48px;
+  height: 80px;
   width: auto;
   object-fit: contain;
 }
@@ -32,7 +46,23 @@
 .nav {
   display: flex;
   align-items: center;
-  gap: 2.5rem;
+  flex: 1;
+  margin-left: 2rem;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 1200px) {
+  .nav-links {
+    gap: 2rem;
+  }
 }
 
 .nav-link {
@@ -71,7 +101,6 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-left: 1rem;
 }
 
 .btn-phone-header {
@@ -128,7 +157,7 @@
   background-color: var(--light-gray);
 }
 
-@media (max-width: 992px) {
+@media (max-width: 1200px) {
   .mobile-toggle {
     display: block;
   }
@@ -152,6 +181,12 @@
     clip-path: circle(150% at top right);
   }
 
+  .nav-links {
+    flex-direction: column;
+    width: 100%;
+    gap: 1.5rem;
+  }
+
   .nav-link::after {
     display: none;
   }
@@ -168,4 +203,19 @@
   .nav-actions .btn {
     width: 100%;
   }
+}
+
+@keyframes phone-ring {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(-10deg); }
+  20% { transform: rotate(10deg); }
+  30% { transform: rotate(-10deg); }
+  40% { transform: rotate(10deg); }
+  50% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.phone-icon-animate {
+  animation: phone-ring 2.5s infinite;
+  transform-origin: center;
 }

@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Calendar, Clock, CreditCard, CheckCircle, ChevronRight, ChevronLeft, AlertCircle, Loader, Car } from 'lucide-react';
 import { packagesApi, availabilityApi, bookingsApi, vehicleTypesApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 import './Booking.css';
 
 const Booking = () => {
@@ -16,7 +17,6 @@ const Booking = () => {
   const [timeSlots, setTimeSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
 
   const [bookingData, setBookingData] = useState({
     vehicleType: '',
@@ -72,13 +72,12 @@ const Booking = () => {
     fetchSlots();
   }, [bookingData.date, bookingData.vehicleType]);
 
-  const handleNext = () => { setError(''); setStep(step + 1); };
-  const handlePrev = () => { setError(''); setStep(step - 1); };
+  const handleNext = () => { setStep(step + 1); };
+  const handlePrev = () => { setStep(step - 1); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setError('');
 
     try {
       await bookingsApi.create({
@@ -89,9 +88,10 @@ const Booking = () => {
         pickupAddress: bookingData.pickupAddress || undefined,
         notes: bookingData.notes || undefined,
       });
+      toast.success('Booking confirmed successfully!');
       setStep(5);
     } catch (err) {
-      setError(err.message || 'Failed to create booking. Please try again.');
+      toast.error(err.message || 'Failed to create booking. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -121,13 +121,6 @@ const Booking = () => {
             <div className={`step-indicator ${step >= 3 ? 'active' : ''}`}>3. Schedule</div>
             <div className="step-line"></div>
             <div className={`step-indicator ${step >= 4 ? 'active' : ''}`}>4. Review</div>
-          </div>
-        )}
-
-        {error && (
-          <div className="booking-error" style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '0.75rem', padding: '1rem 1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#DC2626' }}>
-            <AlertCircle size={20} />
-            <span>{error}</span>
           </div>
         )}
 

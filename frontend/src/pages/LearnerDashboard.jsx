@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import { Calendar, Clock, CheckCircle, TrendingUp, Award, ChevronRight, XCircle, Loader, AlertCircle } from 'lucide-react';
 import { dashboardApi, bookingsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 import './Dashboard.css';
 
 const LearnerDashboard = () => {
   const { user } = useAuth();
   const [dashData, setDashData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [cancellingId, setCancellingId] = useState(null);
 
   useEffect(() => {
@@ -18,30 +18,7 @@ const LearnerDashboard = () => {
         const data = await dashboardApi.learner();
         setDashData(data);
       } catch (err) {
-        setError(err.message || 'Failed to load dashboard');
-        // Fallback mock data
-        setDashData({
-          upcomingLessons: [
-            { id: '1', sessionDate: '2026-06-12', startTime: '14:00', endTime: '15:30', lessonType: '1.5 Hour Practice Session', instructorName: 'Santosh D.', status: 'scheduled' },
-          ],
-          progress: {
-            percent: 45,
-            skills: [
-              { name: 'Basic Car Control', status: 'completed' },
-              { name: 'Steering & Turning', status: 'completed' },
-              { name: 'Parallel Parking', status: 'in_progress' },
-              { name: 'Highway Driving', status: 'pending' },
-            ],
-          },
-          notes: [
-            { date: '2026-06-05', text: 'Great improvement on intersection observations today. Remember to check your blind spot consistently before merging.' },
-          ],
-          stats: { hoursLogged: 14 },
-          recentBookings: [
-            { id: 'b1', date: '2026-06-05', type: '1 Hour Session', status: 'completed' },
-            { id: 'b2', date: '2026-05-28', type: '1.5 Hour Session', status: 'completed' },
-          ],
-        });
+        toast.error(err.message || 'Failed to load dashboard');
       } finally {
         setLoading(false);
       }
@@ -58,8 +35,9 @@ const LearnerDashboard = () => {
         ...prev,
         upcomingLessons: prev.upcomingLessons?.filter(l => l.id !== bookingId) || [],
       }));
+      toast.success('Booking cancelled');
     } catch (err) {
-      alert(err.message || 'Failed to cancel booking');
+      toast.error(err.message || 'Failed to cancel booking');
     } finally {
       setCancellingId(null);
     }
@@ -75,12 +53,13 @@ const LearnerDashboard = () => {
   }
 
   const d = dashData || {};
-  const upcomingLessons = d.upcomingLessons || d.upcoming || [];
-  const progressData = d.progress || {};
-  const skills = progressData.skills || [];
-  const notes = d.notes || d.instructorNotes || [];
-  const stats = d.stats || {};
-  const recentBookings = d.recentBookings || d.bookings || [];
+  // Backend returns upcomingLesson (singular); wrap into array for the list UI
+  const upcomingLessons = d.upcomingLessons || d.upcoming || (d.upcomingLesson ? [d.upcomingLesson] : []);
+  const progressPercent = d.progressPercent ?? d.progress?.percent ?? 0;
+  const skills = d.skills || d.progress?.skills || [];
+  const notes = d.instructorNotes || d.notes || [];
+  const hoursLogged = d.hoursLogged ?? d.stats?.hoursLogged ?? user?.logbookHours ?? 0;
+  const recentBookings = d.lessonHistory || d.recentBookings || d.bookings || [];
 
   return (
     <div className="dashboard-page bg-light section">
@@ -135,11 +114,11 @@ const LearnerDashboard = () => {
             <div className="dashboard-card mb-4">
               <div className="card-header border-bottom">
                 <h3 className="h4">Your Progress</h3>
-                <span className="text-muted text-sm">{progressData.percent || 0}% Complete</span>
+                <span className="text-muted text-sm">{progressPercent}% Complete</span>
               </div>
               <div className="card-body">
                 <div className="progress-bar-container">
-                  <div className="progress-bar" style={{ width: `${progressData.percent || 0}%` }}></div>
+                  <div className="progress-bar" style={{ width: `${progressPercent}%` }}></div>
                 </div>
                 <div className="skills-grid mt-4">
                   {skills.map((skill, idx) => (
@@ -151,7 +130,7 @@ const LearnerDashboard = () => {
                       ) : (
                         <div className="circle-empty"></div>
                       )}
-                      <span>{skill.name || skill.skillName}</span>
+                      <span>{skill.skill_name || skill.name || skill.skillName}</span>
                     </div>
                   ))}
                 </div>
@@ -169,8 +148,8 @@ const LearnerDashboard = () => {
                 ) : (
                   notes.map((note, idx) => (
                     <div className="note-item" key={idx}>
-                      <div className="note-date text-sm text-muted">{new Date(note.date || note.createdAt).toLocaleDateString('en-AU', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
-                      <p>"{note.text || note.note}"</p>
+                      <div className="note-date text-sm text-muted">{new Date(note.created_at || note.date || note.createdAt).toLocaleDateString('en-AU', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+                      <p>"{note.note || note.text}"</p>
                     </div>
                   ))
                 )}
@@ -181,7 +160,7 @@ const LearnerDashboard = () => {
           <div className="dashboard-sidebar">
             <div className="dashboard-card mb-4 bg-primary text-white">
               <div className="card-body text-center py-4">
-                <div className="stat-value text-white">{stats.hoursLogged || user?.logbookHours || 0}</div>
+                <div className="stat-value text-white">{hoursLogged}</div>
                 <div className="stat-label">Hours Logged</div>
                 <Link to="/book" className="btn btn-white w-100 mt-3" style={{ backgroundColor: 'white', color: 'var(--primary-blue)' }}>Book Next Lesson</Link>
               </div>

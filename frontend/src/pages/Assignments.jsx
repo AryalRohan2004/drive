@@ -2,17 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Users, ArrowRightLeft, Loader, AlertCircle, CheckCircle, User, Car } from 'lucide-react';
 import { assignmentsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 import './Assignments.css';
 
 const Assignments = () => {
   const { role } = useAuth();
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [transferForm, setTransferForm] = useState(null);
   const [transferData, setTransferData] = useState({ reason: '' });
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     const fetchAssignments = async () => {
@@ -20,7 +19,7 @@ const Assignments = () => {
         const data = await assignmentsApi.getMine();
         setAssignments(data.assignments || data || []);
       } catch (err) {
-        setError(err.message || 'Failed to load assignments');
+        toast.error(err.message || 'Failed to load assignments');
       } finally {
         setLoading(false);
       }
@@ -32,11 +31,11 @@ const Assignments = () => {
     setSubmitting(true);
     try {
       await assignmentsApi.createTransferRequest(assignmentId, { reason: transferData.reason });
-      setSuccess('Transfer request submitted successfully!');
+      toast.success('Transfer request submitted successfully!');
       setTransferForm(null);
       setTransferData({ reason: '' });
     } catch (err) {
-      alert(err.message || 'Failed to submit transfer request');
+      toast.error(err.message || 'Failed to submit transfer request');
     } finally {
       setSubmitting(false);
     }
@@ -62,9 +61,6 @@ const Assignments = () => {
             <p className="text-muted">Your student-instructor assignments and transfer options.</p>
           </div>
         </div>
-
-        {success && <div className="assign-alert success"><CheckCircle size={18} /><span>{success}</span></div>}
-        {error && <div className="assign-alert error"><AlertCircle size={18} /><span>{error}</span></div>}
 
         {assignments.length === 0 ? (
           <div className="assign-card text-center" style={{ padding: '3rem' }}>

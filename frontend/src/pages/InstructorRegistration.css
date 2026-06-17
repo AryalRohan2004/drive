@@ -116,12 +116,26 @@
   transition: border-color var(--transition-smooth);
 }
 
+.form-group input.input-error,
+.form-group select.input-error,
+.form-group textarea.input-error {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+}
+
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
   border-color: var(--primary-blue);
   box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+}
+
+.field-error {
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: #dc2626;
 }
 
 /* Checkbox Grids */
@@ -168,6 +182,13 @@
 
 .file-upload-box input[type="file"] {
   display: none;
+}
+
+.upload-success {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--success-green);
+  font-weight: 600;
 }
 
 /* Form Actions */

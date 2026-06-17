@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRightLeft, CheckCircle, XCircle, Loader, AlertCircle, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { transferRequestsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 import './TrainingRequests.css';
 
 const TransferRequests = () => {
   const { role } = useAuth();
   const [transfers, setTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [expandedId, setExpandedId] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
   const [responseMsg, setResponseMsg] = useState('');
@@ -19,7 +19,7 @@ const TransferRequests = () => {
         const data = await transferRequestsApi.list();
         setTransfers(data.transferRequests || data || []);
       } catch (err) {
-        setError(err.message || 'Failed to load transfer requests');
+        toast.error(err.message || 'Failed to load transfer requests');
       } finally {
         setLoading(false);
       }
@@ -39,8 +39,9 @@ const TransferRequests = () => {
         t.id === id ? { ...t, status: action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'completed' } : t
       ));
       setResponseMsg('');
+      toast.success(`Transfer request ${action}ed`);
     } catch (err) {
-      alert(err.message || `Failed to ${action}`);
+      toast.error(err.message || `Failed to ${action}`);
     } finally {
       setActionLoading(null);
     }
@@ -66,8 +67,6 @@ const TransferRequests = () => {
             <p className="text-muted">Manage student instructor transfer requests.</p>
           </div>
         </div>
-
-        {error && <div className="tr-alert error"><AlertCircle size={18} /><span>{error}</span></div>}
 
         {transfers.length === 0 ? (
           <div className="tr-card text-center" style={{ padding: '3rem' }}>

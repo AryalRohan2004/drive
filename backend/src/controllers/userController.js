@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { asyncHandler } from '../utils/asyncHandler.js';
 import { query } from '../config/db.js';
 import { AppError } from '../utils/AppError.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
 const updateProfileSchema = z.object({
   fullName: z.string().min(2).optional(),

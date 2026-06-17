@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Save, Loader, AlertCircle, CheckCircle, MapPin, Phone, Mail, Car, Shield } from 'lucide-react';
 import { usersApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 import './Profile.css';
 
 const Profile = () => {
@@ -9,8 +10,6 @@ const Profile = () => {
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -34,8 +33,6 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setError('');
-    setSuccess('');
     try {
       await usersApi.updateMe({
         fullName: formData.fullName,
@@ -56,10 +53,10 @@ const Profile = () => {
           serviceRadiusKm: formData.serviceRadiusKm ? Number(formData.serviceRadiusKm) : undefined,
         } : {}),
       });
-      setSuccess('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
       await refreshUser();
     } catch (err) {
-      setError(err.message || 'Failed to update profile.');
+      toast.error(err.message || 'Failed to update profile.');
     } finally {
       setSaving(false);
     }
@@ -89,13 +86,6 @@ const Profile = () => {
             </p>
           </div>
         </div>
-
-        {success && (
-          <div className="profile-alert success"><CheckCircle size={18} /><span>{success}</span></div>
-        )}
-        {error && (
-          <div className="profile-alert error"><AlertCircle size={18} /><span>{error}</span></div>
-        )}
 
         <form onSubmit={handleSubmit}>
           {/* Basic Info */}

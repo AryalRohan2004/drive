@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Users, Calendar, Clock, Edit, CheckCircle, Search, Loader, AlertCircle } from 'lucide-react';
 import { dashboardApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 import './Dashboard.css';
 
 const InstructorDashboard = () => {
@@ -18,20 +19,8 @@ const InstructorDashboard = () => {
       try {
         const data = await dashboardApi.instructor();
         setDashData(data);
-      } catch {
-        // Fallback mock data
-        setDashData({
-          todayLessons: [
-            { id: 'l1', time: '09:00 AM', studentName: 'Sarah Jenkins', type: '1.5 Hour Session • Learner Package', status: 'scheduled' },
-            { id: 'l2', time: '11:30 AM', studentName: 'Rajiv M.', type: '2 Hour Session • Overseas Conversion', status: 'scheduled' },
-            { id: 'l3', time: '02:00 PM', studentName: 'Emily T.', type: '1 Hour Session • Single Lesson', status: 'scheduled' },
-          ],
-          stats: { hoursToday: 4.5, activeStudents: 12 },
-          students: [
-            { id: 's1', name: 'Sarah Jenkins', packageName: 'Complete Learner', progressPercent: 60 },
-            { id: 's2', name: 'Rajiv M.', packageName: 'Overseas Conversion', progressPercent: 30 },
-          ],
-        });
+      } catch (err) {
+        toast.error(err.message || 'Failed to load dashboard');
       } finally {
         setLoading(false);
       }
@@ -50,7 +39,7 @@ const InstructorDashboard = () => {
         ),
       }));
     } catch (err) {
-      alert(err.message || 'Failed to complete lesson');
+      toast.error(err.message || 'Failed to complete lesson');
     } finally {
       setCompletingId(null);
     }
@@ -67,10 +56,10 @@ const InstructorDashboard = () => {
 
   const d = dashData || {};
   const todayLessons = d.todayLessons || d.lessons || [];
-  const stats = d.stats || {};
+  const stats = d.quickStats || d.stats || {};
   const students = d.students || [];
   const filteredStudents = students.filter(s =>
-    s.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    (s.full_name || s.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -117,10 +106,10 @@ const InstructorDashboard = () => {
                       todayLessons.map(lesson => (
                         <div className="history-item" key={lesson.id}>
                           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                            <div className="lesson-time font-medium text-primary">{lesson.time || lesson.startTime}</div>
+                            <div className="lesson-time font-medium text-primary">{lesson.lesson_time || lesson.time || lesson.startTime}</div>
                             <div>
-                              <div className="font-medium text-dark">{lesson.studentName}</div>
-                              <div className="text-sm text-muted">{lesson.type || lesson.lessonType}</div>
+                              <div className="font-medium text-dark">{lesson.student_name || lesson.studentName}</div>
+                              <div className="text-sm text-muted">{lesson.package_name || lesson.booking_type || lesson.type || lesson.lessonType}</div>
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -151,12 +140,12 @@ const InstructorDashboard = () => {
                 <div className="card-body py-4">
                   <h4 className="text-white mb-2">Quick Stats</h4>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
-                    <span>Hours Today</span>
-                    <strong>{stats.hoursToday || 0} hrs</strong>
+                    <span>Lessons Today</span>
+                    <strong>{stats.lessons_today || stats.hoursToday || 0}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Active Students</span>
-                    <strong>{stats.activeStudents || students.length}</strong>
+                    <strong>{stats.active_students || stats.activeStudents || students.length}</strong>
                   </div>
                 </div>
               </div>
@@ -199,8 +188,8 @@ const InstructorDashboard = () => {
                   ) : (
                     filteredStudents.map(student => (
                       <tr key={student.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                        <td style={{ padding: '1rem 1.5rem' }}>{student.name || student.fullName}</td>
-                        <td style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>{student.packageName || '—'}</td>
+                        <td style={{ padding: '1rem 1.5rem' }}>{student.full_name || student.name || student.fullName}</td>
+                        <td style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>{student.package_name || student.packageName || '—'}</td>
                         <td style={{ padding: '1rem 1.5rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <div style={{ width: '100px', height: '6px', backgroundColor: 'var(--border-color)', borderRadius: '3px' }}>

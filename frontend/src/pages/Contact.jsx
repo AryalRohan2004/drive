@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { MapPin, Phone, Mail, Clock, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { contactApi } from '../services/api';
+import { toast } from 'react-hot-toast';
 import './Contact.css';
 
 const Contact = () => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -16,8 +15,6 @@ const Contact = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess(false);
 
     try {
       await contactApi.submit({
@@ -26,10 +23,10 @@ const Contact = () => {
         phone: formData.phone || undefined,
         message: formData.message,
       });
-      setSuccess(true);
+      toast.success('Message sent successfully! We\'ll get back to you soon.');
       setFormData({ name: '', email: '', phone: '', message: '' });
     } catch (err) {
-      setError(err.message || 'Failed to send message. Please try again.');
+      toast.error(err.message || 'Failed to send message. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -82,19 +79,6 @@ const Contact = () => {
 
             <div className="contact-form-wrapper">
               <h2 className="h3" style={{ marginBottom: '1.5rem' }}>Send us a message</h2>
-
-              {success && (
-                <div className="form-success">
-                  <CheckCircle size={20} />
-                  <span>Message sent successfully! We'll get back to you soon.</span>
-                </div>
-              )}
-              {error && (
-                <div className="form-error">
-                  <AlertCircle size={20} />
-                  <span>{error}</span>
-                </div>
-              )}
 
               <form className="contact-form" onSubmit={handleSubmit}>
                 <div className="form-group">
