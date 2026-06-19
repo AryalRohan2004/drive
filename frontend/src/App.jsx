@@ -25,6 +25,7 @@ import Documents from './pages/Documents';
 import FindInstructor from './pages/FindInstructor';
 import Assignments from './pages/Assignments';
 import TransferRequests from './pages/TransferRequests';
+import Testimonials from './pages/Testimonials';
 
 // Placeholder components for routes not yet fully built
 const PlaceholderPage = ({ title }) => (
@@ -62,7 +63,7 @@ function App() {
           <Route path="resources" element={<Resources />} />
           <Route path="countries" element={<PlaceholderPage title="Recognised Countries" />} />
           <Route path="faq" element={<PlaceholderPage title="Frequently Asked Questions" />} />
-          <Route path="testimonials" element={<PlaceholderPage title="Student Testimonials" />} />
+          <Route path="testimonials" element={<Testimonials />} />
           <Route path="find-instructor" element={<FindInstructor />} />
           <Route path="book" element={<Booking />} />
 

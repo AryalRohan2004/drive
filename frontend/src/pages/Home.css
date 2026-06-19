@@ -464,24 +464,26 @@
 }
 
 .success-grid {
-  column-count: 4;
-  column-gap: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
 }
 
 .success-card {
-  break-inside: avoid;
-  margin-bottom: 1.5rem;
   border-radius: 1rem;
   overflow: hidden;
-  box-shadow: var(--shadow-md);
-  background-color: var(--light-gray);
+  box-shadow: var(--shadow-xl);
+  background-color: var(--white);
   position: relative;
-  display: inline-block; /* Fixes rendering bugs in some browsers for masonry */
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
 }
 
 .success-card img {
   width: 100%;
+  height: 240px;
   display: block;
   object-fit: cover;
   transition: transform var(--transition-smooth);
@@ -492,48 +494,31 @@
 }
 
 .success-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
-  padding: 3rem 1rem 1rem 1rem;
-  color: white;
+  background-color: white;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  opacity: 0;
-  transform: translateY(10px);
-  transition: all 0.3s ease;
-  pointer-events: none;
+  flex-grow: 1;
+  border-top: 1px solid var(--border-color);
 }
 
 .success-card:hover .success-overlay {
-  opacity: 1;
-  transform: translateY(0);
+  /* No hover effects needed for the overlay anymore */
 }
 
 .success-message {
   font-size: 0.95rem;
   line-height: 1.4;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
   font-weight: 500;
   font-style: italic;
-  text-shadow: 0px 2px 4px rgba(0,0,0,0.8);
+  color: var(--black);
 }
 
 .success-name {
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--accent-yellow);
-}
-
-@media (hover: none) {
-  .success-overlay {
-    opacity: 1;
-    transform: translateY(0);
-    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 100%);
-  }
+  color: var(--primary-blue);
 }
 
 /* Testimonials Section */
