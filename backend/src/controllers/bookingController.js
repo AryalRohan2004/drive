@@ -2,11 +2,12 @@ import crypto from 'crypto';
 import { z } from 'zod';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
-import { query } from '../config/db.js';
-import { env } from '../config/env.js';
+import { query, withTransaction } from '../config/db.js';
 import { sendEmail } from '../services/emailService.js';
+import { logAudit } from '../utils/auditLogger.js';
 
 const bookingSchema = z.object({
+  studentId: z.string().optional().nullable(),
   bookingType: z.enum(['learner', 'overseas', 'test']),
   vehicleType: z.string().optional().nullable(),
   vehicleCategory: z.string().optional().nullable(),
@@ -48,6 +49,168 @@ const mapBooking = (row) => ({
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
+
+const runInTransaction = async (fn) => withTransaction((client) => fn(client));
+
+const parseTimeToMinutes = (value) => {
+  if (!value) return null;
+  const text = String(value).trim();
+  const amPmMatch = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
+  if (amPmMatch) {
+    let hour = Number(amPmMatch[1]);
+    const minute = Number(amPmMatch[2]);
+    const period = amPmMatch[3].toUpperCase();
+    if (period === 'PM' && hour !== 12) hour += 12;
+    if (period === 'AM' && hour === 12) hour = 0;
+    return hour * 60 + minute;
+  }
+
+  const twentyFourHourMatch = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (twentyFourHourMatch) {
+    return Number(twentyFourHourMatch[1]) * 60 + Number(twentyFourHourMatch[2]);
+  }
+
+  return null;
+};
+
+const rangesOverlap = (startA, endA, startB, endB) => startA < endB && startB < endA;
+
+const assertLearnerRequirements = async (studentId, selectedVehicleType) => {
+  if (!selectedVehicleType) return;
+
+  const vehicleType = await query(
+    `SELECT code, name, requires_document_verification
+     FROM vehicle_types
+     WHERE is_active = TRUE AND (code = $1 OR LOWER(name) = LOWER($1))
+     LIMIT 1`,
+    [selectedVehicleType]
+  );
+
+  const matched = vehicleType.rows[0];
+  if (!matched?.requires_document_verification) return;
+
+  const verified = await query(
+    `SELECT id FROM learner_documents
+     WHERE student_id = $1
+       AND status = 'verified'
+       AND (document_type = $2 OR document_type = $3)
+     LIMIT 1`,
+    [studentId, matched.code, matched.name]
+  );
+
+  if (verified.rowCount === 0) {
+    throw new AppError(`Verified ${matched.name} document is required before booking this lesson.`, 403);
+  }
+};
+
+const assertNoInstructorConflict = async ({ instructorId, lessonDate, lessonTime, durationMinutes, excludeBookingId = null }) => {
+  const requestedStart = parseTimeToMinutes(lessonTime);
+  if (requestedStart === null) {
+    throw new AppError('Lesson time is invalid', 400);
+  }
+  const requestedEnd = requestedStart + Number(durationMinutes || 60);
+
+  const existing = await query(
+    `SELECT b.id, b.lesson_time, COALESCE(p.duration_minutes, 60) AS duration_minutes
+     FROM bookings b
+     LEFT JOIN lesson_packages p ON p.id = b.package_id
+     WHERE b.lesson_date = $1::date
+       AND b.instructor_id = $2
+       AND b.status IN ('pending', 'confirmed')
+       AND ($3::text IS NULL OR b.id <> $3)
+     UNION ALL
+     SELECT ls.id, ls.start_time AS lesson_time, 60 AS duration_minutes
+     FROM lesson_sessions ls
+     WHERE ls.session_date = $1::date
+       AND ls.instructor_id = $2
+       AND ls.status IN ('scheduled', 'in_progress')
+       AND ($3::text IS NULL OR ls.booking_id IS DISTINCT FROM $3)`,
+    [lessonDate, instructorId, excludeBookingId]
+  );
+
+  const conflict = existing.rows.find((booking) => {
+    const bookedStart = parseTimeToMinutes(booking.lesson_time);
+    if (bookedStart === null) return false;
+    const bookedEnd = bookedStart + Number(booking.duration_minutes || 60);
+    return rangesOverlap(requestedStart, requestedEnd, bookedStart, bookedEnd);
+  });
+
+  if (conflict) {
+    throw new AppError('That time slot is already booked', 409);
+  }
+};
+
+const ensureLearningStarted = async (client, booking) => {
+  if (!booking.user_id || !booking.instructor_id) return null;
+
+  const active = await client.query(
+    `SELECT * FROM student_assignments
+     WHERE student_id = $1 AND status = 'active'
+     ORDER BY started_at DESC
+     LIMIT 1`,
+    [booking.user_id]
+  );
+
+  if (active.rowCount > 0 && active.rows[0].instructor_id === booking.instructor_id) {
+    await client.query(
+      `UPDATE users SET learning_status = 'active', updated_at = NOW() WHERE id = $1`,
+      [booking.user_id]
+    );
+    return active.rows[0];
+  }
+
+  if (active.rowCount > 0) {
+    await client.query(
+      `UPDATE student_assignments SET status = 'transferred', ended_at = NOW() WHERE id = $1`,
+      [active.rows[0].id]
+    );
+  }
+
+  const created = await client.query(
+    `INSERT INTO student_assignments (id, student_id, instructor_id, vehicle_type, status, started_at)
+     VALUES ($1, $2, $3, $4, 'active', NOW())
+     RETURNING *`,
+    [crypto.randomUUID(), booking.user_id, booking.instructor_id, booking.vehicle_type || 'standard-car']
+  );
+
+  await client.query(
+    `UPDATE users SET learning_status = 'active', updated_at = NOW() WHERE id = $1`,
+    [booking.user_id]
+  );
+
+  return created.rows[0];
+};
+
+const ensureScheduledSession = async (client, booking) => {
+  if (!booking.user_id || !booking.instructor_id) return null;
+
+  const existing = await client.query('SELECT * FROM lesson_sessions WHERE booking_id = $1 LIMIT 1', [booking.id]);
+  if (existing.rowCount > 0) return existing.rows[0];
+
+  const created = await client.query(
+    `INSERT INTO lesson_sessions (
+      id, booking_id, student_id, instructor_id, session_date, start_time, end_time,
+      location, lesson_type, vehicle_type, status, notes
+    )
+     VALUES ($1,$2,$3,$4,$5::date,$6::time,$7::time,$8,$9,$10,'scheduled',$11)
+     RETURNING *`,
+    [
+      crypto.randomUUID(),
+      booking.id,
+      booking.user_id,
+      booking.instructor_id,
+      booking.lesson_date,
+      booking.lesson_time,
+      booking.lesson_time,
+      booking.pickup_address || booking.pickup_suburb || null,
+      booking.booking_type,
+      booking.vehicle_type || null,
+      booking.notes || null,
+    ]
+  );
+
+  return created.rows[0];
+};
 
 export const listBookings = asyncHandler(async (req, res) => {
   const filters = [];
@@ -141,6 +304,7 @@ export const createBooking = asyncHandler(async (req, res) => {
 
   const data = parsed.data;
   const selectedVehicleType = data.vehicleType || data.vehicleCategory || null;
+  const studentId = req.user.role === 'admin' ? data.studentId || req.user.id : req.user.id;
   let packageRow = null;
 
   if (data.packageId) {
@@ -159,26 +323,34 @@ export const createBooking = asyncHandler(async (req, res) => {
     throw new AppError('A package code or package ID is required', 400);
   }
 
-  const isGuestBooking = !req.user?.id;
-  if (isGuestBooking && !env.allowGuestBookings) {
-    throw new AppError('Guest bookings are disabled', 403);
+  if (!data.instructorId) {
+    throw new AppError('Instructor is required before creating a learner booking', 400);
   }
 
-  if (data.instructorId) {
-    const conflict = await query(
-      `SELECT id FROM bookings
-       WHERE lesson_date = $1::date
-         AND lesson_time = $2::time
-         AND instructor_id = $3
-         AND status IN ('pending', 'confirmed')
-       LIMIT 1`,
-      [data.lessonDate, data.lessonTime, data.instructorId]
-    );
-
-    if (conflict.rowCount > 0) {
-      throw new AppError('That time slot is already booked', 409);
-    }
+  const instructor = await query(
+    `SELECT id FROM users WHERE id = $1 AND role = 'instructor' AND status = 'active'`,
+    [data.instructorId]
+  );
+  if (instructor.rowCount === 0) {
+    throw new AppError('Instructor not found or unavailable', 404);
   }
+
+  const learner = await query(
+    `SELECT id FROM users WHERE id = $1 AND role = 'learner' AND status = 'active'`,
+    [studentId]
+  );
+  if (learner.rowCount === 0) {
+    throw new AppError('Active learner account is required before creating a booking', 403);
+  }
+
+  await assertLearnerRequirements(studentId, selectedVehicleType);
+
+  await assertNoInstructorConflict({
+    instructorId: data.instructorId,
+    lessonDate: data.lessonDate,
+    lessonTime: data.lessonTime,
+    durationMinutes: packageRow.duration_minutes,
+  });
 
   const bookingNumber = `SANOS-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
   const result = await query(
@@ -192,10 +364,10 @@ export const createBooking = asyncHandler(async (req, res) => {
     [
       crypto.randomUUID(),
       bookingNumber,
-      req.user?.id || null,
+      studentId,
       data.guestName || null,
-      data.guestEmail || req.user?.email || null,
-      data.guestPhone || req.user?.phone || null,
+      data.guestEmail || req.user.email || null,
+      data.guestPhone || req.user.phone || null,
       data.bookingType,
       packageRow.id,
       data.lessonDate,
@@ -221,6 +393,23 @@ export const createBooking = asyncHandler(async (req, res) => {
       html: `<p>Your booking <strong>${booking.bookingNumber}</strong> has been received and is pending confirmation.</p>`,
     });
   }
+
+  await logAudit({
+    actor: req.user,
+    action: 'booking.created',
+    entityType: 'booking',
+    entityId: booking.id,
+    targetUserId: booking.userId,
+    targetUserRole: 'learner',
+    summary: `${req.user.role} created booking ${booking.bookingNumber}`,
+    metadata: {
+      instructorId: booking.instructorId,
+      lessonDate: booking.lessonDate,
+      lessonTime: booking.lessonTime,
+      packageId: booking.packageId,
+      bookingType: booking.bookingType,
+    },
+  });
 
   res.status(201).json({ booking });
 });
@@ -264,6 +453,34 @@ export const updateBooking = asyncHandler(async (req, res) => {
     throw new AppError('No changes submitted', 400);
   }
 
+  const existing = await query(
+    `SELECT b.*, COALESCE(p.duration_minutes, 60) AS duration_minutes
+     FROM bookings b
+     LEFT JOIN lesson_packages p ON p.id = b.package_id
+     WHERE b.id = $1`,
+    [req.params.id]
+  );
+
+  if (existing.rowCount === 0) {
+    throw new AppError('Booking not found', 404);
+  }
+
+  const current = existing.rows[0];
+  const nextInstructorId = allowed.data.instructorId ?? current.instructor_id;
+  const nextLessonDate = allowed.data.lessonDate ?? current.lesson_date;
+  const nextLessonTime = allowed.data.lessonTime ?? current.lesson_time;
+  const nextStatus = allowed.data.status ?? current.status;
+
+  if (nextInstructorId && nextLessonDate && nextLessonTime && ['pending', 'confirmed'].includes(nextStatus)) {
+    await assertNoInstructorConflict({
+      instructorId: nextInstructorId,
+      lessonDate: nextLessonDate,
+      lessonTime: nextLessonTime,
+      durationMinutes: current.duration_minutes,
+      excludeBookingId: req.params.id,
+    });
+  }
+
   values.push(req.params.id);
 
   const result = await query(
@@ -275,20 +492,81 @@ export const updateBooking = asyncHandler(async (req, res) => {
     throw new AppError('Booking not found', 404);
   }
 
+  await logAudit({
+    actor: req.user,
+    action: 'booking.updated',
+    entityType: 'booking',
+    entityId: result.rows[0].id,
+    targetUserId: result.rows[0].user_id,
+    targetUserRole: 'learner',
+    summary: `${req.user.role} updated booking ${result.rows[0].booking_number}`,
+    metadata: { changes: allowed.data },
+  });
+
   res.json({ booking: result.rows[0] });
 });
 
 export const confirmBooking = asyncHandler(async (req, res) => {
-  const result = await query(
-    `UPDATE bookings SET status = 'confirmed', payment_status = 'paid', updated_at = NOW() WHERE id = $1 RETURNING *`,
+  const existing = await query(
+    `SELECT b.*, COALESCE(p.duration_minutes, 60) AS duration_minutes
+     FROM bookings b
+     LEFT JOIN lesson_packages p ON p.id = b.package_id
+     WHERE b.id = $1`,
     [req.params.id]
   );
 
-  if (result.rowCount === 0) {
+  if (existing.rowCount === 0) {
     throw new AppError('Booking not found', 404);
   }
 
-  res.json({ booking: result.rows[0] });
+  const bookingToConfirm = existing.rows[0];
+  if (bookingToConfirm.instructor_id) {
+    await assertNoInstructorConflict({
+      instructorId: bookingToConfirm.instructor_id,
+      lessonDate: bookingToConfirm.lesson_date,
+      lessonTime: bookingToConfirm.lesson_time,
+      durationMinutes: bookingToConfirm.duration_minutes,
+      excludeBookingId: req.params.id,
+    });
+  }
+
+  const result = await runInTransaction(async (client) => {
+    const updated = await client.query(
+      `UPDATE bookings
+       SET status = 'confirmed', payment_status = 'paid', updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [req.params.id]
+    );
+
+    if (updated.rowCount === 0) {
+      throw new AppError('Booking not found', 404);
+    }
+
+    const booking = updated.rows[0];
+    const session = await ensureScheduledSession(client, booking);
+    const assignment = await ensureLearningStarted(client, booking);
+
+    await logAudit({
+      client,
+      actor: req.user,
+      action: 'booking.confirmed',
+      entityType: 'booking',
+      entityId: booking.id,
+      targetUserId: booking.user_id,
+      targetUserRole: 'learner',
+      summary: `${req.user.role} confirmed booking ${booking.booking_number}`,
+      metadata: {
+        instructorId: booking.instructor_id,
+        sessionId: session?.id || null,
+        assignmentId: assignment?.id || null,
+      },
+    });
+
+    return { booking, session, assignment };
+  });
+
+  res.json(result);
 });
 
 export const cancelBooking = asyncHandler(async (req, res) => {
@@ -306,6 +584,17 @@ export const cancelBooking = asyncHandler(async (req, res) => {
     `UPDATE bookings SET status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING *`,
     [req.params.id]
   );
+
+  await logAudit({
+    actor: req.user,
+    action: 'booking.cancelled',
+    entityType: 'booking',
+    entityId: result.rows[0].id,
+    targetUserId: result.rows[0].user_id,
+    targetUserRole: 'learner',
+    summary: `${req.user.role} cancelled booking ${result.rows[0].booking_number}`,
+    metadata: { instructorId: result.rows[0].instructor_id },
+  });
 
   res.json({ booking: result.rows[0] });
 });

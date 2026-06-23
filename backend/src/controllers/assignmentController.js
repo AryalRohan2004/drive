@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
 import { query, withTransaction } from '../config/db.js';
+import { logAudit } from '../utils/auditLogger.js';
 
 const runInTransaction = async (fn) => withTransaction((client) => fn(client));
 
@@ -49,7 +50,7 @@ export const createTransferRequest = asyncHandler(async (req, res) => {
     [req.user.id]
   );
   const profile = await query(
-    `SELECT progress_percent, logbook_hours, documentation_status FROM users WHERE id = $1`,
+    `SELECT progress_percent, logbook_hours, learning_status, documentation_status FROM users WHERE id = $1`,
     [req.user.id]
   );
 
@@ -70,6 +71,7 @@ export const createTransferRequest = asyncHandler(async (req, res) => {
       JSON.stringify({
         progressPercent: profile.rows[0]?.progress_percent ?? 0,
         logbookHours: profile.rows[0]?.logbook_hours ?? 0,
+        learningStatus: profile.rows[0]?.learning_status ?? 'not_started',
         documentationStatus: profile.rows[0]?.documentation_status ?? 'pending',
         skills: progress.rows,
       }),
@@ -77,6 +79,21 @@ export const createTransferRequest = asyncHandler(async (req, res) => {
       parsed.data.packageBalanceTransferred,
     ]
   );
+
+  await logAudit({
+    actor: req.user,
+    action: 'transfer.requested',
+    entityType: 'transfer_request',
+    entityId: result.rows[0].id,
+    targetUserId: req.user.id,
+    targetUserRole: 'learner',
+    summary: 'Learner requested instructor transfer',
+    metadata: {
+      fromInstructorId: current.rows[0].instructor_id,
+      toInstructorId: parsed.data.toInstructorId,
+      currentAssignmentId: current.rows[0].id,
+    },
+  });
 
   res.status(201).json({ transferRequest: result.rows[0] });
 });
@@ -122,6 +139,10 @@ const createReplacementAssignment = async (client, transferRequest, currentAssig
       status,
       currentAssignment.source_training_request_id || null,
     ]
+  );
+  await client.query(
+    `UPDATE users SET learning_status = $2, updated_at = NOW() WHERE id = $1`,
+    [transferRequest.student_id, status === 'active' ? 'active' : 'transferred']
   );
   return assignmentResult.rows[0];
 };
@@ -181,6 +202,22 @@ export const approveTransferRequest = asyncHandler(async (req, res) => {
       [transfer.id, newAssignment.id, payload.data.reason || null]
     );
 
+    await logAudit({
+      client,
+      actor: req.user,
+      action: 'transfer.approved',
+      entityType: 'transfer_request',
+      entityId: updatedTransfer.rows[0].id,
+      targetUserId: transfer.student_id,
+      targetUserRole: 'learner',
+      summary: `${req.user.role} approved learner transfer`,
+      metadata: {
+        fromInstructorId: transfer.from_instructor_id,
+        toInstructorId: transfer.to_instructor_id,
+        newAssignmentId: newAssignment.id,
+      },
+    });
+
     return { transferRequest: updatedTransfer.rows[0], assignment: newAssignment };
   });
 
@@ -206,6 +243,22 @@ export const rejectTransferRequest = asyncHandler(async (req, res) => {
        RETURNING *`,
       [transfer.id, payload.data.reason || null]
     );
+
+    await logAudit({
+      client,
+      actor: req.user,
+      action: 'transfer.rejected',
+      entityType: 'transfer_request',
+      entityId: updated.rows[0].id,
+      targetUserId: transfer.student_id,
+      targetUserRole: 'learner',
+      summary: `${req.user.role} rejected learner transfer`,
+      metadata: {
+        fromInstructorId: transfer.from_instructor_id,
+        toInstructorId: transfer.to_instructor_id,
+        reason: payload.data.reason || null,
+      },
+    });
 
     return { transferRequest: updated.rows[0] };
   });
@@ -249,6 +302,18 @@ export const completeTransferRequest = asyncHandler(async (req, res) => {
        RETURNING *`,
       [transfer.id, newAssignmentId]
     );
+
+    await logAudit({
+      client,
+      actor: req.user,
+      action: 'transfer.completed',
+      entityType: 'transfer_request',
+      entityId: updated.rows[0].id,
+      targetUserId: transfer.student_id,
+      targetUserRole: 'learner',
+      summary: `${req.user.role} completed learner transfer`,
+      metadata: { newAssignmentId },
+    });
 
     return { transferRequest: updated.rows[0], newAssignmentId };
   });

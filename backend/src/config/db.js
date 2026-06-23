@@ -78,6 +78,7 @@ const createTables = [
     special_requirements TEXT,
     logbook_hours INTEGER NOT NULL DEFAULT 0,
     progress_percent INTEGER NOT NULL DEFAULT 0,
+    learning_status TEXT NOT NULL DEFAULT 'not_started',
     license_number TEXT,
     service_areas TEXT[] DEFAULT '{}',
     bio TEXT,
@@ -280,6 +281,22 @@ const createTables = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
   `,
+  `
+  CREATE TABLE IF NOT EXISTS audit_logs (
+    id TEXT PRIMARY KEY,
+    actor_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    actor_role TEXT,
+    actor_name TEXT,
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT,
+    target_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    target_user_role TEXT,
+    summary TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  `,
 ];
 
 const packagesSeed = [
@@ -405,6 +422,7 @@ export async function initializeDatabase() {
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS emergency_contact_phone TEXT`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_lesson_times JSONB DEFAULT '[]'::jsonb`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS special_requirements TEXT`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS learning_status TEXT NOT NULL DEFAULT 'not_started'`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS documentation_status TEXT DEFAULT 'pending'`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS vehicle_types_supported TEXT[] DEFAULT '{}'::text[]`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS base_address TEXT`,
@@ -422,6 +440,16 @@ export async function initializeDatabase() {
   ];
 
   for (const statement of alterStatements) {
+    await execute(statement);
+  }
+
+  const indexStatements = [
+    `CREATE INDEX IF NOT EXISTS audit_logs_actor_role_created_at_idx ON audit_logs(actor_role, created_at)`,
+    `CREATE INDEX IF NOT EXISTS audit_logs_target_user_role_created_at_idx ON audit_logs(target_user_role, created_at)`,
+    `CREATE INDEX IF NOT EXISTS audit_logs_action_created_at_idx ON audit_logs(action, created_at)`,
+  ];
+
+  for (const statement of indexStatements) {
     await execute(statement);
   }
 

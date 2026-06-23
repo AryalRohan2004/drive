@@ -5,7 +5,7 @@ import { query } from '../config/db.js';
 
 const hydrateUser = async (userId) => {
   const result = await query(
-    'SELECT id, full_name, email, phone, role, status, logbook_hours, progress_percent, license_number, service_areas, bio, availability, created_at, updated_at FROM users WHERE id = $1',
+    'SELECT id, full_name, email, phone, role, status, logbook_hours, progress_percent, learning_status, license_number, service_areas, bio, availability, created_at, updated_at FROM users WHERE id = $1',
     [userId]
   );
 

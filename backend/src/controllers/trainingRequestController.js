@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
 import { query, withTransaction } from '../config/db.js';
+import { logAudit } from '../utils/auditLogger.js';
 
 const schema = z.object({
   instructorId: z.string().min(1),
@@ -14,6 +15,65 @@ const schema = z.object({
   pickupSuburb: z.string().optional().nullable(),
   message: z.string().optional().nullable(),
 });
+
+const parseTimeToMinutes = (value) => {
+  if (!value) return null;
+  const text = String(value).trim();
+  const amPmMatch = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
+  if (amPmMatch) {
+    let hour = Number(amPmMatch[1]);
+    const minute = Number(amPmMatch[2]);
+    const period = amPmMatch[3].toUpperCase();
+    if (period === 'PM' && hour !== 12) hour += 12;
+    if (period === 'AM' && hour === 12) hour = 0;
+    return hour * 60 + minute;
+  }
+
+  const twentyFourHourMatch = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (twentyFourHourMatch) {
+    return Number(twentyFourHourMatch[1]) * 60 + Number(twentyFourHourMatch[2]);
+  }
+
+  return null;
+};
+
+const rangesOverlap = (startA, endA, startB, endB) => startA < endB && startB < endA;
+
+const assertInstructorSessionAvailable = async (client, instructorId, date, time) => {
+  if (!date || !time) return;
+
+  const requestedStart = parseTimeToMinutes(time);
+  if (requestedStart === null) {
+    throw new AppError('Preferred time is invalid', 400);
+  }
+  const requestedEnd = requestedStart + 60;
+
+  const existing = await client.query(
+    `SELECT b.lesson_time, COALESCE(p.duration_minutes, 60) AS duration_minutes
+     FROM bookings b
+     LEFT JOIN lesson_packages p ON p.id = b.package_id
+     WHERE b.lesson_date = $1::date
+       AND b.instructor_id = $2
+       AND b.status IN ('pending', 'confirmed')
+     UNION ALL
+     SELECT ls.start_time AS lesson_time, 60 AS duration_minutes
+     FROM lesson_sessions ls
+     WHERE ls.session_date = $1::date
+       AND ls.instructor_id = $2
+       AND ls.status IN ('scheduled', 'in_progress')`,
+    [date, instructorId]
+  );
+
+  const conflict = existing.rows.find((slot) => {
+    const bookedStart = parseTimeToMinutes(slot.lesson_time);
+    if (bookedStart === null) return false;
+    return rangesOverlap(requestedStart, requestedEnd, bookedStart, bookedStart + Number(slot.duration_minutes || 60));
+  });
+
+  if (conflict) {
+    throw new AppError('That instructor is already booked for the requested time', 409);
+  }
+};
 
 export const listTrainingRequests = asyncHandler(async (req, res) => {
   const filters = [];
@@ -55,6 +115,21 @@ export const createTrainingRequest = asyncHandler(async (req, res) => {
      VALUES ($1,$2,$3,$4,$5,$6::date,$7,$8,$9,$10) RETURNING *`,
     [crypto.randomUUID(), req.user.id, data.instructorId, data.vehicleType, data.packageId || null, data.preferredDate || null, data.preferredTime || null, data.pickupAddress || null, data.pickupSuburb || null, data.message || null]
   );
+  await logAudit({
+    actor: req.user,
+    action: 'training_request.created',
+    entityType: 'training_request',
+    entityId: result.rows[0].id,
+    targetUserId: req.user.id,
+    targetUserRole: 'learner',
+    summary: 'Learner requested training with instructor',
+    metadata: {
+      instructorId: data.instructorId,
+      vehicleType: data.vehicleType,
+      preferredDate: data.preferredDate || null,
+      preferredTime: data.preferredTime || null,
+    },
+  });
   res.status(201).json({ trainingRequest: result.rows[0] });
 });
 
@@ -69,6 +144,19 @@ const updateStatus = async (req, res, status) => {
     `UPDATE training_requests SET status = $1, response_message = $2, responded_at = NOW(), updated_at = NOW() WHERE id = $3 RETURNING *`,
     [status, responseMessage, req.params.id]
   );
+  await logAudit({
+    actor: req.user,
+    action: `training_request.${status}`,
+    entityType: 'training_request',
+    entityId: result.rows[0].id,
+    targetUserId: result.rows[0].student_id,
+    targetUserRole: 'learner',
+    summary: `${req.user.role} changed training request to ${status}`,
+    metadata: {
+      instructorId: result.rows[0].instructor_id,
+      responseMessage,
+    },
+  });
   res.json({ trainingRequest: result.rows[0] });
 };
 
@@ -81,6 +169,8 @@ export const acceptTrainingRequest = asyncHandler(async (req, res) => {
     if (req.user.role !== 'admin' && req.user.id !== row.instructor_id) {
       throw new AppError('You do not have permission to accept this request', 403);
     }
+
+    await assertInstructorSessionAvailable(client, row.instructor_id, row.preferred_date, row.preferred_time);
 
     const activeAssignment = await client.query(
       `SELECT * FROM student_assignments WHERE student_id = $1 AND status = 'active' ORDER BY started_at DESC LIMIT 1`,
@@ -106,6 +196,11 @@ export const acceptTrainingRequest = asyncHandler(async (req, res) => {
       [crypto.randomUUID(), row.student_id, row.instructor_id, row.vehicle_type, row.id]
     );
 
+    await client.query(
+      `UPDATE users SET learning_status = 'active', updated_at = NOW() WHERE id = $1`,
+      [row.student_id]
+    );
+
     if (row.preferred_date && row.preferred_time) {
       await client.query(
         `INSERT INTO lesson_sessions (id, student_id, instructor_id, session_date, start_time, end_time, lesson_type, vehicle_type, status, notes)
@@ -123,6 +218,22 @@ export const acceptTrainingRequest = asyncHandler(async (req, res) => {
         ]
       );
     }
+
+    await logAudit({
+      client,
+      actor: req.user,
+      action: 'training_request.accepted',
+      entityType: 'training_request',
+      entityId: result.rows[0].id,
+      targetUserId: row.student_id,
+      targetUserRole: 'learner',
+      summary: `${req.user.role} accepted training request`,
+      metadata: {
+        instructorId: row.instructor_id,
+        assignmentId: assignmentResult.rows[0].id,
+        vehicleType: row.vehicle_type,
+      },
+    });
 
     return { trainingRequest: result.rows[0], assignment: assignmentResult.rows[0] };
   });

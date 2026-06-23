@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
 import { query } from '../config/db.js';
+import { logAudit } from '../utils/auditLogger.js';
 
 const schema = z.object({
   documentType: z.string().min(2),
@@ -18,6 +19,19 @@ export const createLearnerDocument = asyncHandler(async (req, res) => {
      VALUES ($1,$2,$3,$4,$5) RETURNING *`,
     [crypto.randomUUID(), req.user.id, parsed.data.documentType, parsed.data.fileUrl || null, parsed.data.status || 'pending']
   );
+  await logAudit({
+    actor: req.user,
+    action: 'learner_document.created',
+    entityType: 'learner_document',
+    entityId: result.rows[0].id,
+    targetUserId: req.user.id,
+    targetUserRole: 'learner',
+    summary: 'Learner uploaded/submitted a document',
+    metadata: {
+      documentType: result.rows[0].document_type,
+      status: result.rows[0].status,
+    },
+  });
   res.status(201).json({ learnerDocument: result.rows[0] });
 });
 
@@ -37,5 +51,18 @@ export const updateLearnerDocumentStatus = asyncHandler(async (req, res) => {
     [parsed.data.status, parsed.data.rejectionReason || null, req.user.id, req.params.id]
   );
   if (result.rowCount === 0) throw new AppError('Document not found', 404);
+  await logAudit({
+    actor: req.user,
+    action: `learner_document.${parsed.data.status}`,
+    entityType: 'learner_document',
+    entityId: result.rows[0].id,
+    targetUserId: result.rows[0].student_id,
+    targetUserRole: 'learner',
+    summary: `${req.user.role} changed learner document to ${parsed.data.status}`,
+    metadata: {
+      documentType: result.rows[0].document_type,
+      rejectionReason: parsed.data.rejectionReason || null,
+    },
+  });
   res.json({ learnerDocument: result.rows[0] });
 });

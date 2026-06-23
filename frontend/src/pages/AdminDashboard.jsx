@@ -1,459 +1,1094 @@
-import { Car, CheckCircle, Edit, FileText, Loader, Mail, Package, Plus, Save, Search, Trash2, Users, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import {
+  Activity,
+  AlertCircle,
+  BarChart3,
+  BookOpen,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  Edit3,
+  FileText,
+  Gauge,
+  LayoutDashboard,
+  Loader,
+  Mail,
+  Package,
+  Plus,
+  RefreshCw,
+  Save,
+  Search,
+  ShieldCheck,
+  SlidersHorizontal,
+  Trash2,
+  UserCheck,
+  Users,
+  X,
+  XCircle,
+} from 'lucide-react';
+import { Children, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { contactApi, contentApi, packagesApi, usersApi, vehicleTypesApi } from '../services/api';
+import {
+  auditLogsApi,
+  bookingsApi,
+  contactApi,
+  contentApi,
+  dashboardApi,
+  packagesApi,
+  usersApi,
+  vehicleTypesApi,
+} from '../services/api';
 import './AdminDashboard.css';
 
+const listFrom = (payload, keys) => {
+  if (Array.isArray(payload)) return payload;
+  for (const key of keys) {
+    if (Array.isArray(payload?.[key])) return payload[key];
+  }
+  return [];
+};
+
+const toTitle = (value) => String(value || 'unknown').replace(/_/g, ' ');
+
+const formatDate = (value) => {
+  if (!value) return 'Not set';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+const formatDateTime = (value) => {
+  if (!value) return 'Not set';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('en-AU', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const formatMoney = (value) => {
+  const number = Number(value || 0);
+  return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(number);
+};
+
+const buildQuery = (params) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') query.set(key, value);
+  });
+  return query.toString();
+};
+
+const getName = (user) => user?.fullName || user?.full_name || user?.name || 'Unnamed user';
+const getContentSeoTitle = (page) => page?.seoTitle ?? page?.seo_title ?? '';
+const getContentSeoDescription = (page) => page?.seoDescription ?? page?.seo_description ?? '';
+const getContentPublished = (page) => page?.isPublished ?? page?.is_published ?? true;
+
+const initialPackageForm = {
+  name: '',
+  code: '',
+  description: '',
+  price: '',
+  durationMinutes: '90',
+  category: 'single',
+  isActive: true,
+  includedItems: '',
+};
+
+const initialVehicleForm = { name: '', code: '', description: '', isActive: true };
+const initialContentForm = {
+  slug: '',
+  title: '',
+  content: '',
+  seoTitle: '',
+  seoDescription: '',
+  isPublished: true,
+};
+
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeSection, setActiveSection] = useState('overview');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [packages, setPackages] = useState([]);
+  const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [contentPages, setContentPages] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [logTotal, setLogTotal] = useState(0);
+  const [logFilters, setLogFilters] = useState({
+    actorRole: '',
+    targetUserRole: '',
+    action: '',
+    entityType: '',
+    from: '',
+    to: '',
+  });
+
+  const loadLogs = async (filters = logFilters) => {
+    const data = await auditLogsApi.list(buildQuery({ ...filters, limit: 80 }));
+    setLogs(listFrom(data, ['logs', 'auditLogs']));
+    setLogTotal(data.total || listFrom(data, ['logs', 'auditLogs']).length);
+  };
+
+  const loadAdminData = async ({ silent = false } = {}) => {
+    if (silent) setRefreshing(true);
+    else setLoading(true);
+
+    const requests = await Promise.allSettled([
+      dashboardApi.admin(),
+      usersApi.list(buildQuery({ limit: 100 })),
+      bookingsApi.list(buildQuery({ limit: 100 })),
+      contactApi.list(),
+      packagesApi.list(),
+      vehicleTypesApi.list(),
+      contentApi.list(),
+      auditLogsApi.list(buildQuery({ limit: 80 })),
+    ]);
+
+    const [dashboardRes, usersRes, bookingsRes, contactsRes, packagesRes, vehicleRes, contentRes, logsRes] = requests;
+
+    if (dashboardRes.status === 'fulfilled') setSummary(dashboardRes.value);
+    if (usersRes.status === 'fulfilled') setUsers(listFrom(usersRes.value, ['users']));
+    if (bookingsRes.status === 'fulfilled') setBookings(listFrom(bookingsRes.value, ['bookings']));
+    if (contactsRes.status === 'fulfilled') setContacts(listFrom(contactsRes.value, ['contactRequests', 'contacts']));
+    if (packagesRes.status === 'fulfilled') setPackages(listFrom(packagesRes.value, ['packages']));
+    if (vehicleRes.status === 'fulfilled') setVehicleTypes(listFrom(vehicleRes.value, ['vehicleTypes', 'types']));
+    if (contentRes.status === 'fulfilled') setContentPages(listFrom(contentRes.value, ['contentPages', 'pages', 'content']));
+    if (logsRes.status === 'fulfilled') {
+      setLogs(listFrom(logsRes.value, ['logs', 'auditLogs']));
+      setLogTotal(logsRes.value.total || listFrom(logsRes.value, ['logs', 'auditLogs']).length);
+    }
+
+    const failed = requests.filter((result) => result.status === 'rejected');
+    if (failed.length) {
+      toast.error(`${failed.length} admin section${failed.length > 1 ? 's' : ''} could not load`);
+    }
+
+    setLoading(false);
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    const loadTimer = window.setTimeout(() => {
+      loadAdminData();
+    }, 0);
+
+    return () => window.clearTimeout(loadTimer);
+  }, []);
+
+  const counts = summary?.counts || {};
+  const userCounts = counts.users || {};
+  const bookingCounts = counts.bookings || {};
+  const documentCounts = counts.documents || {};
+  const pendingInstructors = useMemo(
+    () => users.filter((user) => user.role === 'instructor' && user.status === 'pending'),
+    [users]
+  );
+
+  const navItems = [
+    { key: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { key: 'users', label: 'Users', icon: Users, badge: users.length },
+    { key: 'approvals', label: 'Instructor approvals', icon: ShieldCheck, badge: pendingInstructors.length },
+    { key: 'bookings', label: 'Bookings', icon: CalendarClock, badge: bookings.length },
+    { key: 'logs', label: 'Activity logs', icon: Activity, badge: logTotal },
+    { key: 'packages', label: 'Packages', icon: Package, badge: packages.length },
+    { key: 'contacts', label: 'Messages', icon: Mail, badge: contacts.length },
+    { key: 'content', label: 'Content', icon: FileText, badge: contentPages.length },
+    { key: 'system', label: 'System setup', icon: SlidersHorizontal, badge: vehicleTypes.length },
+  ];
+
+  const currentLabel = navItems.find((item) => item.key === activeSection)?.label || 'Overview';
+
+  if (loading) {
+    return (
+      <div className="admin-console admin-console-loading">
+        <Loader size={36} className="spin-icon" />
+        <p>Preparing admin control room...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="admin-page bg-light section">
-      <div className="container">
-        <h1 className="h2" style={{ marginBottom: '0.5rem' }}>Admin Dashboard</h1>
-        <p className="text-muted" style={{ marginBottom: '2rem' }}>Manage users, packages, contact submissions, and more.</p>
-
-        <div className="admin-tabs">
-          {[
-            { key: 'users', label: 'Users', icon: <Users size={16} /> },
-            { key: 'contacts', label: 'Contacts', icon: <Mail size={16} /> },
-            { key: 'packages', label: 'Packages', icon: <Package size={16} /> },
-            { key: 'vehicles', label: 'Vehicle Types', icon: <Car size={16} /> },
-            { key: 'content', label: 'Content', icon: <FileText size={16} /> },
-          ].map(tab => (
-            <button
-              key={tab.key}
-              className={`admin-tab ${activeTab === tab.key ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.key)}
-            >
-              {tab.icon} {tab.label}
-            </button>
-          ))}
+    <div className="admin-console">
+      <aside className="admin-sidebar">
+        <div className="admin-brand-panel">
+          <span className="admin-brand-mark"><Gauge size={22} /></span>
+          <div>
+            <strong>Sanos Control</strong>
+            <small>Operations dashboard</small>
+          </div>
         </div>
 
-        {activeTab === 'users' && <UsersTab />}
-        {activeTab === 'contacts' && <ContactsTab />}
-        {activeTab === 'packages' && <PackagesTab />}
-        {activeTab === 'vehicles' && <VehicleTypesTab />}
-        {activeTab === 'content' && <ContentTab />}
-      </div>
+        <nav className="admin-side-nav" aria-label="Admin sections">
+          {navItems.map(({ key, label, icon: Icon, badge }) => (
+            <button
+              key={key}
+              className={`admin-side-link ${activeSection === key ? 'active' : ''}`}
+              onClick={() => setActiveSection(key)}
+              type="button"
+            >
+              <span><Icon size={18} /> {label}</span>
+              {badge !== undefined && <em>{badge}</em>}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      <main className="admin-main">
+        <header className="admin-topbar">
+          <div>
+            <span className="admin-eyebrow">Admin panel</span>
+            <h1>{currentLabel}</h1>
+            <p>Manage learners, instructors, bookings, approvals, platform content, and audit history.</p>
+          </div>
+          <button className="admin-action ghost" onClick={() => loadAdminData({ silent: true })} disabled={refreshing} type="button">
+            {refreshing ? <Loader size={16} className="spin-icon" /> : <RefreshCw size={16} />}
+            Refresh
+          </button>
+        </header>
+
+        {activeSection === 'overview' && (
+          <OverviewSection
+            userCounts={userCounts}
+            bookingCounts={bookingCounts}
+            documentCounts={documentCounts}
+            pendingInstructors={pendingInstructors}
+            recentLogs={logs.length ? logs.slice(0, 8) : summary?.recentLogs || []}
+            onNavigate={setActiveSection}
+          />
+        )}
+        {activeSection === 'users' && <UsersSection users={users} setUsers={setUsers} />}
+        {activeSection === 'approvals' && <ApprovalsSection users={pendingInstructors} setUsers={setUsers} />}
+        {activeSection === 'bookings' && <BookingsSection bookings={bookings} setBookings={setBookings} />}
+        {activeSection === 'logs' && (
+          <LogsSection
+            logs={logs}
+            total={logTotal}
+            filters={logFilters}
+            setFilters={setLogFilters}
+            onApply={() => loadLogs(logFilters).catch((err) => toast.error(err.message || 'Failed to load logs'))}
+          />
+        )}
+        {activeSection === 'packages' && <PackagesSection packages={packages} setPackages={setPackages} />}
+        {activeSection === 'contacts' && <ContactsSection contacts={contacts} setContacts={setContacts} />}
+        {activeSection === 'content' && <ContentSection pages={contentPages} setPages={setContentPages} />}
+        {activeSection === 'system' && <SystemSection vehicleTypes={vehicleTypes} setVehicleTypes={setVehicleTypes} />}
+      </main>
     </div>
   );
 };
 
-// ─── Users Tab ──────────────────────────────────────────
-const UsersTab = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+const OverviewSection = ({ userCounts, bookingCounts, documentCounts, pendingInstructors, recentLogs, onNavigate }) => {
+  const metrics = [
+    { label: 'Learners', value: userCounts.learners || 0, helper: `${userCounts.active_learners || 0} active`, icon: BookOpen, tone: 'blue' },
+    { label: 'Instructors', value: userCounts.instructors || 0, helper: `${userCounts.active_instructors || 0} active`, icon: UserCheck, tone: 'green' },
+    { label: 'Pending approvals', value: userCounts.pending_instructors || pendingInstructors.length, helper: 'Needs admin review', icon: ShieldCheck, tone: 'amber' },
+    { label: 'Bookings', value: bookingCounts.total_bookings || 0, helper: `${bookingCounts.confirmed_bookings || 0} confirmed`, icon: CalendarClock, tone: 'slate' },
+    { label: 'Paid revenue', value: formatMoney(bookingCounts.paid_revenue), helper: 'Paid booking total', icon: BarChart3, tone: 'green' },
+    { label: 'Learner documents', value: documentCounts.total_documents || 0, helper: `${documentCounts.pending_documents || 0} pending`, icon: ClipboardList, tone: 'blue' },
+  ];
+
+  return (
+    <section className="admin-section-stack">
+      <div className="admin-metrics-grid">
+        {metrics.map(({ label, value, helper, icon: Icon, tone }) => (
+          <article className={`admin-metric-card ${tone}`} key={label}>
+            <div className="admin-metric-icon"><Icon size={22} /></div>
+            <span>{label}</span>
+            <strong>{value}</strong>
+            <small>{helper}</small>
+          </article>
+        ))}
+      </div>
+
+      <div className="admin-overview-grid">
+        <div className="admin-panel">
+          <PanelHeader
+            title="Instructor approval desk"
+            subtitle="New instructors must be approved before teaching learners."
+            actionLabel="Open approvals"
+            onAction={() => onNavigate('approvals')}
+          />
+          <ApprovalsList users={pendingInstructors.slice(0, 5)} compact />
+        </div>
+
+        <div className="admin-panel">
+          <PanelHeader
+            title="Recent activity"
+            subtitle="Audit trail from learner, instructor, and admin actions."
+            actionLabel="View logs"
+            onAction={() => onNavigate('logs')}
+          />
+          <LogTimeline logs={recentLogs} />
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const UsersSection = ({ users, setUsers }) => {
   const [search, setSearch] = useState('');
+  const [role, setRole] = useState('');
+  const [status, setStatus] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
 
-  useEffect(() => {
-    usersApi.list().then(d => setUsers(d.users || d || [])).catch((err) => toast.error(err.message || 'Failed to load users')).finally(() => setLoading(false));
-  }, []);
+  const filtered = useMemo(() => {
+    const term = search.toLowerCase();
+    return users.filter((user) => {
+      const matchesSearch = !term || getName(user).toLowerCase().includes(term) || (user.email || '').toLowerCase().includes(term);
+      const matchesRole = !role || user.role === role;
+      const matchesStatus = !status || user.status === status;
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [users, search, role, status]);
 
-  const handleSave = async (id) => {
+  const saveUser = async (id) => {
     try {
-      await usersApi.updateById(id, editData);
-      setUsers(prev => prev.map(u => u.id === id ? { ...u, ...editData } : u));
+      const data = await usersApi.updateById(id, editData);
+      const nextUser = data.user || { ...users.find((user) => user.id === id), ...editData };
+      setUsers((prev) => prev.map((user) => (user.id === id ? nextUser : user)));
       setEditingId(null);
-    } catch (err) { toast.error(err.message || 'Failed to save user'); }
+      toast.success('User updated');
+    } catch (err) {
+      toast.error(err.message || 'Failed to update user');
+    }
   };
-
-  const handleApprove = async (id) => {
-    try {
-      await usersApi.updateById(id, { status: 'active' });
-      setUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'active' } : u));
-      toast.success('Instructor approved!');
-    } catch (err) { toast.error(err.message || 'Failed to approve instructor'); }
-  };
-
-  const filtered = users.filter(u =>
-    (u.fullName || u.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (u.email || '').toLowerCase().includes(search.toLowerCase())
-  );
-
-  if (loading) return <AdminLoader />;
 
   return (
-    <div className="admin-card">
-      <div className="admin-card-header">
-        <h3 className="h4">All Users ({users.length})</h3>
-        <div className="admin-search">
-          <Search size={16} />
-          <input placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
+    <div className="admin-panel">
+      <PanelHeader title="User management" subtitle="Search, filter, and update learner/instructor/admin records." />
+      <div className="admin-toolbar">
+        <SearchBox value={search} onChange={setSearch} placeholder="Search by name or email..." />
+        <select value={role} onChange={(event) => setRole(event.target.value)}>
+          <option value="">All roles</option>
+          <option value="learner">Learners</option>
+          <option value="instructor">Instructors</option>
+          <option value="admin">Admins</option>
+        </select>
+        <select value={status} onChange={(event) => setStatus(event.target.value)}>
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="active">Active</option>
+          <option value="rejected">Rejected</option>
+          <option value="suspended">Suspended</option>
+          <option value="inactive">Inactive</option>
+        </select>
       </div>
-      <div className="admin-table-wrapper">
-        <table className="admin-table">
-          <thead>
-            <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Action</th></tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan={5} className="text-center text-muted" style={{ padding: '2rem' }}>No users found.</td></tr>
-            ) : filtered.map(u => (
-              <tr key={u.id}>
-                <td>{u.fullName || u.full_name}</td>
-                <td className="text-muted">{u.email}</td>
-                <td>
-                  {editingId === u.id ? (
-                    <select value={editData.role || u.role} onChange={(e) => setEditData({ ...editData, role: e.target.value })}>
-                      <option value="learner">Learner</option>
-                      <option value="instructor">Instructor</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  ) : (
-                    <span className="admin-role-badge">{u.role}</span>
-                  )}
-                </td>
-                <td>
-                  {editingId === u.id ? (
-                    <select value={editData.status || u.status} onChange={(e) => setEditData({ ...editData, status: e.target.value })}>
-                      <option value="pending">Pending</option>
-                      <option value="active">Active</option>
-                      <option value="suspended">Suspended</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                  ) : (
-                    <span className={`admin-status ${u.status}`}>{u.status}</span>
-                  )}
-                </td>
-                <td>
-                  {editingId === u.id ? (
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className="admin-btn save" onClick={() => handleSave(u.id)}><Save size={14} /></button>
-                      <button className="admin-btn cancel" onClick={() => setEditingId(null)}><X size={14} /></button>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <button className="admin-btn edit" onClick={() => { setEditingId(u.id); setEditData({ role: u.role, status: u.status }); }} title="Edit User"><Edit size={14} /></button>
-                      {u.role === 'instructor' && u.status === 'pending' && (
-                        <button
-                          className="admin-btn save"
-                          onClick={() => handleApprove(u.id)}
-                          title="Approve Instructor"
-                        >
-                          <CheckCircle size={14} />
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+
+      <ResponsiveTable emptyText="No users found." colSpan={7}>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map((user) => (
+            <tr key={user.id}>
+              <td><strong>{getName(user)}</strong></td>
+              <td className="muted-cell">{user.email}</td>
+              <td>{user.phone || 'Not set'}</td>
+              <td>
+                {editingId === user.id ? (
+                  <select value={editData.role || user.role} onChange={(event) => setEditData({ ...editData, role: event.target.value })}>
+                    <option value="learner">Learner</option>
+                    <option value="instructor">Instructor</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                ) : (
+                  <RolePill role={user.role} />
+                )}
+              </td>
+              <td>
+                {editingId === user.id ? (
+                  <select value={editData.status || user.status} onChange={(event) => setEditData({ ...editData, status: event.target.value })}>
+                    <option value="pending">Pending</option>
+                    <option value="active">Active</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                ) : (
+                  <StatusPill status={user.status} />
+                )}
+              </td>
+              <td>{formatDate(user.createdAt || user.created_at)}</td>
+              <td>
+                {editingId === user.id ? (
+                  <ActionGroup>
+                    <IconButton label="Save" tone="success" onClick={() => saveUser(user.id)}><Save size={15} /></IconButton>
+                    <IconButton label="Cancel" onClick={() => setEditingId(null)}><X size={15} /></IconButton>
+                  </ActionGroup>
+                ) : (
+                  <ActionGroup>
+                    <IconButton
+                      label="Edit"
+                      tone="primary"
+                      onClick={() => {
+                        setEditingId(user.id);
+                        setEditData({ role: user.role, status: user.status });
+                      }}
+                    >
+                      <Edit3 size={15} />
+                    </IconButton>
+                  </ActionGroup>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </ResponsiveTable>
     </div>
   );
 };
 
-// ─── Contacts Tab ───────────────────────────────────────
-const ContactsTab = () => {
-  const [contacts, setContacts] = useState([]);
-  const [loading, setLoading] = useState(true);
+const ApprovalsSection = ({ users, setUsers }) => (
+  <div className="admin-panel">
+    <PanelHeader title="Instructor approvals" subtitle="Accept or reject instructors before they become bookable on the platform." />
+    <ApprovalsList users={users} setUsers={setUsers} />
+  </div>
+);
 
-  useEffect(() => {
-    contactApi.list().then(d => setContacts(d.contactRequests || d.contacts || d || [])).catch((err) => toast.error(err.message || 'Failed to load contacts')).finally(() => setLoading(false));
-  }, []);
-
-  const handleStatusChange = async (id, status) => {
+const ApprovalsList = ({ users, setUsers, compact = false }) => {
+  const approve = async (id) => {
     try {
-      await contactApi.update(id, { status });
-      setContacts(prev => prev.map(c => c.id === id ? { ...c, status } : c));
-    } catch (err) { toast.error(err.message || 'Failed to update contact status'); }
+      const data = await usersApi.approveInstructor(id);
+      setUsers?.((prev) => prev.map((user) => (user.id === id ? data.user || { ...user, status: 'active' } : user)));
+      toast.success('Instructor approved');
+    } catch (err) {
+      toast.error(err.message || 'Failed to approve instructor');
+    }
   };
 
-  if (loading) return <AdminLoader />;
+  const reject = async (id) => {
+    try {
+      const data = await usersApi.rejectInstructor(id);
+      setUsers?.((prev) => prev.map((user) => (user.id === id ? data.user || { ...user, status: 'rejected' } : user)));
+      toast.success('Instructor rejected');
+    } catch (err) {
+      toast.error(err.message || 'Failed to reject instructor');
+    }
+  };
+
+  if (!users.length) {
+    return (
+      <EmptyState
+        icon={CheckCircle2}
+        title="No instructors waiting"
+        message="New instructor registrations will appear here for review."
+      />
+    );
+  }
 
   return (
-    <div className="admin-card">
-      <div className="admin-card-header"><h3 className="h4">Contact Submissions ({contacts.length})</h3></div>
-      {contacts.length === 0 ? (
-        <div className="text-center text-muted" style={{ padding: '3rem' }}>No contact submissions yet.</div>
-      ) : (
-        <div className="admin-table-wrapper">
-          <table className="admin-table">
-            <thead><tr><th>Name</th><th>Email</th><th>Message</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody>
-              {contacts.map(c => (
-                <tr key={c.id}>
-                  <td>{c.name}</td>
-                  <td className="text-muted">{c.email}</td>
-                  <td className="text-sm" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.message}</td>
-                  <td><span className={`admin-status ${c.status || 'new'}`}>{c.status || 'new'}</span></td>
-                  <td>
-                    <select value={c.status || 'new'} onChange={(e) => handleStatusChange(c.id, e.target.value)} style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', borderRadius: '0.4rem', border: '1px solid var(--border-color)' }}>
-                      <option value="new">New</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="replied">Replied</option>
-                      <option value="closed">Closed</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+    <div className={compact ? 'admin-approval-list compact' : 'admin-approval-list'}>
+      {users.map((user) => (
+        <article className="admin-approval-card" key={user.id}>
+          <div>
+            <strong>{getName(user)}</strong>
+            <span>{user.email}</span>
+            <small>{user.phone || 'No phone'} • Registered {formatDate(user.createdAt || user.created_at)}</small>
+          </div>
+          {!compact && (
+            <ActionGroup>
+              <button className="admin-action success" onClick={() => approve(user.id)} type="button"><CheckCircle2 size={16} /> Approve</button>
+              <button className="admin-action danger" onClick={() => reject(user.id)} type="button"><XCircle size={16} /> Reject</button>
+            </ActionGroup>
+          )}
+        </article>
+      ))}
     </div>
   );
 };
 
-// ─── Packages Tab ───────────────────────────────────────
-const PackagesTab = () => {
-  const [packages, setPackages] = useState([]);
-  const [loading, setLoading] = useState(true);
+const BookingsSection = ({ bookings, setBookings }) => {
+  const [status, setStatus] = useState('');
+
+  const filtered = useMemo(
+    () => bookings.filter((booking) => !status || booking.status === status),
+    [bookings, status]
+  );
+
+  const updateBookingStatus = async (booking, action) => {
+    try {
+      const data = action === 'confirm' ? await bookingsApi.confirm(booking.id) : await bookingsApi.cancel(booking.id);
+      const nextBooking = data.booking || { ...booking, status: action === 'confirm' ? 'confirmed' : 'cancelled' };
+      setBookings((prev) => prev.map((item) => (item.id === booking.id ? nextBooking : item)));
+      toast.success(`Booking ${action === 'confirm' ? 'confirmed' : 'cancelled'}`);
+    } catch (err) {
+      toast.error(err.message || `Failed to ${action} booking`);
+    }
+  };
+
+  return (
+    <div className="admin-panel">
+      <PanelHeader title="Booking operations" subtitle="See learner schedules, payment status, instructors, and booking states." />
+      <div className="admin-toolbar right">
+        <select value={status} onChange={(event) => setStatus(event.target.value)}>
+          <option value="">All booking statuses</option>
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <ResponsiveTable emptyText="No bookings found." colSpan={9}>
+        <thead>
+          <tr>
+            <th>Booking</th>
+            <th>Learner</th>
+            <th>Instructor</th>
+            <th>Date & time</th>
+            <th>Package</th>
+            <th>Pickup</th>
+            <th>Payment</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map((booking) => (
+            <tr key={booking.id}>
+              <td><strong>{booking.bookingNumber || booking.id?.slice(0, 8)}</strong></td>
+              <td>{booking.guestName || booking.userId || 'Learner'}</td>
+              <td>{booking.instructorId || 'Unassigned'}</td>
+              <td>{formatDate(booking.lessonDate)}<br /><span className="muted-cell">{booking.lessonTime}</span></td>
+              <td>{booking.packageName || booking.packageCode || 'Custom'}<br /><span className="muted-cell">{formatMoney(booking.price)}</span></td>
+              <td>{booking.pickupSuburb || booking.pickupAddress || 'Not set'}</td>
+              <td><StatusPill status={booking.paymentStatus || 'unpaid'} /></td>
+              <td><StatusPill status={booking.status} /></td>
+              <td>
+                <ActionGroup>
+                  {booking.status === 'pending' && (
+                    <IconButton label="Confirm" tone="success" onClick={() => updateBookingStatus(booking, 'confirm')}><CheckCircle2 size={15} /></IconButton>
+                  )}
+                  {booking.status !== 'cancelled' && booking.status !== 'completed' && (
+                    <IconButton label="Cancel" tone="danger" onClick={() => updateBookingStatus(booking, 'cancel')}><XCircle size={15} /></IconButton>
+                  )}
+                </ActionGroup>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </ResponsiveTable>
+    </div>
+  );
+};
+
+const LogsSection = ({ logs, total, filters, setFilters, onApply }) => (
+  <div className="admin-panel">
+    <PanelHeader title="Audit logs" subtitle="Filter what learners, instructors, and admins have done in the system." />
+    <div className="admin-filter-grid">
+      <select value={filters.actorRole} onChange={(event) => setFilters({ ...filters, actorRole: event.target.value })}>
+        <option value="">Actor: all</option>
+        <option value="learner">Learner actions</option>
+        <option value="instructor">Instructor actions</option>
+        <option value="admin">Admin actions</option>
+      </select>
+      <select value={filters.targetUserRole} onChange={(event) => setFilters({ ...filters, targetUserRole: event.target.value })}>
+        <option value="">Target: all</option>
+        <option value="learner">Learner records</option>
+        <option value="instructor">Instructor records</option>
+        <option value="admin">Admin records</option>
+      </select>
+      <input value={filters.action} onChange={(event) => setFilters({ ...filters, action: event.target.value })} placeholder="Exact action e.g. user.updated" />
+      <input value={filters.entityType} onChange={(event) => setFilters({ ...filters, entityType: event.target.value })} placeholder="Entity e.g. booking" />
+      <input type="date" value={filters.from} onChange={(event) => setFilters({ ...filters, from: event.target.value })} />
+      <input type="date" value={filters.to} onChange={(event) => setFilters({ ...filters, to: event.target.value })} />
+      <button className="admin-action primary" onClick={onApply} type="button"><Search size={16} /> Apply filters</button>
+    </div>
+    <div className="admin-log-count">{total} log entries</div>
+    <LogTimeline logs={logs} expanded />
+  </div>
+);
+
+const PackagesSection = ({ packages, setPackages }) => {
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ name: '', code: '', description: '', price: '', durationMinutes: '', totalLessons: '', category: 'single' });
   const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState(initialPackageForm);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    packagesApi.list().then(d => setPackages(d.packages || d || [])).catch((err) => toast.error(err.message || 'Failed to load packages')).finally(() => setLoading(false));
-  }, []);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    const payload = { ...formData, price: Number(formData.price), durationMinutes: Number(formData.durationMinutes) || undefined, totalLessons: Number(formData.totalLessons) || undefined, category: formData.category || 'single' };
-    try {
-      if (editingId) {
-        await packagesApi.update(editingId, payload);
-        setPackages(prev => prev.map(p => p.id === editingId ? { ...p, ...payload } : p));
-      } else {
-        const res = await packagesApi.create(payload);
-        setPackages(prev => [...prev, res.package || res]);
-      }
-      setShowForm(false);
-      setEditingId(null);
-      setFormData({ name: '', code: '', description: '', price: '', durationMinutes: '', totalLessons: '', category: 'single' });
-    } catch (err) { toast.error(err.message || 'Failed to save package'); }
-    finally { setSaving(false); }
+  const resetForm = () => {
+    setFormData(initialPackageForm);
+    setEditingId(null);
+    setShowForm(false);
   };
 
-  const handleDelete = async (id) => {
+  const savePackage = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    const payload = {
+      ...formData,
+      price: Number(formData.price),
+      durationMinutes: Number(formData.durationMinutes) || 90,
+      includedItems: formData.includedItems.split('\n').map((item) => item.trim()).filter(Boolean),
+    };
+
+    try {
+      if (editingId) {
+        const data = await packagesApi.update(editingId, payload);
+        setPackages((prev) => prev.map((item) => (item.id === editingId ? data.package || { ...item, ...payload } : item)));
+        toast.success('Package updated');
+      } else {
+        const data = await packagesApi.create(payload);
+        setPackages((prev) => [...prev, data.package || data]);
+        toast.success('Package created');
+      }
+      resetForm();
+    } catch (err) {
+      toast.error(err.message || 'Failed to save package');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deletePackage = async (id) => {
     if (!window.confirm('Delete this package?')) return;
     try {
       await packagesApi.delete(id);
-      setPackages(prev => prev.filter(p => p.id !== id));
+      setPackages((prev) => prev.filter((item) => item.id !== id));
       toast.success('Package deleted');
-    } catch (err) { toast.error(err.message || 'Failed to delete package'); }
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete package');
+    }
   };
 
-  if (loading) return <AdminLoader />;
-
   return (
-    <div className="admin-card">
-      <div className="admin-card-header">
-        <h3 className="h4">Packages ({packages.length})</h3>
-        <button className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }} onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({ name: '', code: '', description: '', price: '', durationMinutes: '', totalLessons: '', category: 'single' }); }}>
-          {showForm ? 'Cancel' : <><Plus size={16} /> Add Package</>}
-        </button>
-      </div>
+    <div className="admin-panel">
+      <PanelHeader
+        title="Lesson packages"
+        subtitle="Manage lesson pricing, durations, categories, and included items."
+        actionLabel={showForm ? 'Close form' : 'Add package'}
+        onAction={() => {
+          setShowForm(!showForm);
+          if (!showForm) {
+            setEditingId(null);
+            setFormData(initialPackageForm);
+          }
+        }}
+      />
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="admin-form">
-          <div className="admin-form-grid">
-            <div className="form-group"><label>Name</label><input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required /></div>
-            <div className="form-group"><label>Code</label><input value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} required placeholder="e.g. single-lesson" /></div>
-            <div className="form-group"><label>Price ($)</label><input type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required /></div>
-            <div className="form-group"><label>Total Lessons</label><input type="number" value={formData.totalLessons} onChange={(e) => setFormData({ ...formData, totalLessons: e.target.value })} /></div>
-            <div className="form-group"><label>Category</label>
-              <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} required>
+        <form className="admin-form-card" onSubmit={savePackage}>
+          <FormGrid>
+            <Field label="Name"><input value={formData.name} onChange={(event) => setFormData({ ...formData, name: event.target.value })} required /></Field>
+            <Field label="Code"><input value={formData.code} onChange={(event) => setFormData({ ...formData, code: event.target.value })} required /></Field>
+            <Field label="Price"><input type="number" value={formData.price} onChange={(event) => setFormData({ ...formData, price: event.target.value })} required /></Field>
+            <Field label="Duration minutes"><input type="number" value={formData.durationMinutes} onChange={(event) => setFormData({ ...formData, durationMinutes: event.target.value })} /></Field>
+            <Field label="Category">
+              <select value={formData.category} onChange={(event) => setFormData({ ...formData, category: event.target.value })}>
                 <option value="single">Single</option>
                 <option value="package">Package</option>
                 <option value="overseas">Overseas</option>
                 <option value="test">Test</option>
+                <option value="refresher">Refresher</option>
               </select>
-            </div>
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Description</label><input value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} /></div>
-          </div>
-          <button type="submit" className="btn btn-primary" disabled={saving} style={{ marginTop: '1rem' }}>
-            {saving ? <Loader size={16} className="spin-icon" /> : editingId ? 'Update Package' : 'Create Package'}
-          </button>
+            </Field>
+            <Field label="Active">
+              <select value={String(formData.isActive)} onChange={(event) => setFormData({ ...formData, isActive: event.target.value === 'true' })}>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+              </select>
+            </Field>
+            <Field label="Description" wide><input value={formData.description} onChange={(event) => setFormData({ ...formData, description: event.target.value })} /></Field>
+            <Field label="Included items, one per line" wide>
+              <textarea rows="4" value={formData.includedItems} onChange={(event) => setFormData({ ...formData, includedItems: event.target.value })} />
+            </Field>
+          </FormGrid>
+          <FormActions saving={saving} editing={Boolean(editingId)} onCancel={resetForm} />
         </form>
       )}
 
-      <div className="admin-table-wrapper">
-        <table className="admin-table">
-          <thead><tr><th>Name</th><th>Code</th><th>Price</th><th>Lessons</th><th>Actions</th></tr></thead>
-          <tbody>
-            {packages.map(p => (
-              <tr key={p.id}>
-                <td>{p.name}</td>
-                <td className="text-muted">{p.code}</td>
-                <td>${p.price || p.priceAud}</td>
-                <td>{p.totalLessons || '—'}</td>
-                <td>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="admin-btn edit" onClick={() => { setEditingId(p.id); setFormData({ name: p.name, code: p.code, description: p.description || '', price: p.price || p.priceAud || '', durationMinutes: p.durationMinutes || '', totalLessons: p.totalLessons || '', category: p.category || 'single' }); setShowForm(true); }}><Edit size={14} /></button>
-                    <button className="admin-btn delete" onClick={() => handleDelete(p.id)}><Trash2 size={14} /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ResponsiveTable emptyText="No packages configured." colSpan={7}>
+        <thead>
+          <tr><th>Name</th><th>Code</th><th>Category</th><th>Price</th><th>Duration</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {packages.map((item) => (
+            <tr key={item.id}>
+              <td><strong>{item.name}</strong></td>
+              <td className="muted-cell">{item.code}</td>
+              <td>{toTitle(item.category)}</td>
+              <td>{formatMoney(item.price)}</td>
+              <td>{item.durationMinutes || item.duration_minutes || 90} mins</td>
+              <td><StatusPill status={item.isActive === false ? 'inactive' : 'active'} /></td>
+              <td>
+                <ActionGroup>
+                  <IconButton
+                    label="Edit"
+                    tone="primary"
+                    onClick={() => {
+                      setEditingId(item.id);
+                      setFormData({
+                        name: item.name || '',
+                        code: item.code || '',
+                        description: item.description || '',
+                        price: item.price || '',
+                        durationMinutes: item.durationMinutes || item.duration_minutes || 90,
+                        category: item.category || 'single',
+                        isActive: item.isActive !== false,
+                        includedItems: (item.includedItems || item.included_items || []).join('\n'),
+                      });
+                      setShowForm(true);
+                    }}
+                  >
+                    <Edit3 size={15} />
+                  </IconButton>
+                  <IconButton label="Delete" tone="danger" onClick={() => deletePackage(item.id)}><Trash2 size={15} /></IconButton>
+                </ActionGroup>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </ResponsiveTable>
     </div>
   );
 };
 
-// ─── Vehicle Types Tab ──────────────────────────────────
-const VehicleTypesTab = () => {
-  const [types, setTypes] = useState([]);
-  const [loading, setLoading] = useState(true);
+const ContactsSection = ({ contacts, setContacts }) => {
+  const updateStatus = async (id, status) => {
+    try {
+      const data = await contactApi.update(id, { status });
+      setContacts((prev) => prev.map((item) => (item.id === id ? data.contactRequest || { ...item, status } : item)));
+      toast.success('Message status updated');
+    } catch (err) {
+      toast.error(err.message || 'Failed to update message');
+    }
+  };
+
+  return (
+    <div className="admin-panel">
+      <PanelHeader title="Contact messages" subtitle="Track enquiries from learners, parents, and instructors." />
+      <ResponsiveTable emptyText="No contact messages yet." colSpan={6}>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Phone</th><th>Message</th><th>Status</th><th>Received</th></tr>
+        </thead>
+        <tbody>
+          {contacts.map((contact) => (
+            <tr key={contact.id}>
+              <td><strong>{contact.name}</strong></td>
+              <td className="muted-cell">{contact.email}</td>
+              <td>{contact.phone || 'Not set'}</td>
+              <td className="message-cell">{contact.message}</td>
+              <td>
+                <select value={contact.status || 'new'} onChange={(event) => updateStatus(contact.id, event.target.value)}>
+                  <option value="new">New</option>
+                  <option value="in_progress">In progress</option>
+                  <option value="replied">Replied</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </td>
+              <td>{formatDate(contact.createdAt || contact.created_at)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </ResponsiveTable>
+    </div>
+  );
+};
+
+const ContentSection = ({ pages, setPages }) => {
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ name: '', code: '', description: '' });
   const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState(initialContentForm);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    vehicleTypesApi.list().then(d => setTypes(d.vehicleTypes || d || [])).catch((err) => toast.error(err.message || 'Failed to load vehicle types')).finally(() => setLoading(false));
-  }, []);
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setFormData(initialContentForm);
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const saveContent = async (event) => {
+    event.preventDefault();
     setSaving(true);
     try {
       if (editingId) {
-        await vehicleTypesApi.update(editingId, formData);
-        setTypes(prev => prev.map(t => t.id === editingId ? { ...t, ...formData } : t));
+        const data = await contentApi.update(editingId, formData);
+        setPages((prev) => prev.map((item) => (item.id === editingId ? data.contentPage || { ...item, ...formData } : item)));
+        toast.success('Content updated');
       } else {
-        const res = await vehicleTypesApi.create(formData);
-        setTypes(prev => [...prev, res.vehicleType || res]);
+        const data = await contentApi.create(formData);
+        setPages((prev) => [...prev, data.contentPage || data]);
+        toast.success('Content created');
       }
-      setShowForm(false);
-      setEditingId(null);
-      setFormData({ name: '', code: '', description: '' });
-    } catch (err) { toast.error(err.message || 'Failed to save vehicle type'); }
-    finally { setSaving(false); }
+      resetForm();
+    } catch (err) {
+      toast.error(err.message || 'Failed to save content');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (loading) return <AdminLoader />;
-
   return (
-    <div className="admin-card">
-      <div className="admin-card-header">
-        <h3 className="h4">Vehicle Types ({types.length})</h3>
-        <button className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }} onClick={() => { setShowForm(!showForm); setEditingId(null); }}>
-          {showForm ? 'Cancel' : <><Plus size={16} /> Add Type</>}
-        </button>
-      </div>
+    <div className="admin-panel">
+      <PanelHeader
+        title="Website content"
+        subtitle="Manage dynamic pages and SEO fields used across the public site."
+        actionLabel={showForm ? 'Close form' : 'Add page'}
+        onAction={() => {
+          setShowForm(!showForm);
+          if (!showForm) {
+            setEditingId(null);
+            setFormData(initialContentForm);
+          }
+        }}
+      />
+
       {showForm && (
-        <form onSubmit={handleSubmit} className="admin-form">
-          <div className="admin-form-grid">
-            <div className="form-group"><label>Name</label><input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required /></div>
-            <div className="form-group"><label>Code</label><input value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} required placeholder="e.g. auto" /></div>
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Description</label><input value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} /></div>
-          </div>
-          <button type="submit" className="btn btn-primary" disabled={saving} style={{ marginTop: '1rem' }}>
-            {saving ? <Loader size={16} className="spin-icon" /> : editingId ? 'Update' : 'Create'}
-          </button>
+        <form className="admin-form-card" onSubmit={saveContent}>
+          <FormGrid>
+            <Field label="Title"><input value={formData.title} onChange={(event) => setFormData({ ...formData, title: event.target.value })} required /></Field>
+            <Field label="Slug"><input value={formData.slug} onChange={(event) => setFormData({ ...formData, slug: event.target.value })} required /></Field>
+            <Field label="SEO title"><input value={formData.seoTitle} onChange={(event) => setFormData({ ...formData, seoTitle: event.target.value })} /></Field>
+            <Field label="Published">
+              <select value={String(formData.isPublished)} onChange={(event) => setFormData({ ...formData, isPublished: event.target.value === 'true' })}>
+                <option value="true">Published</option>
+                <option value="false">Draft</option>
+              </select>
+            </Field>
+            <Field label="SEO description" wide><input value={formData.seoDescription} onChange={(event) => setFormData({ ...formData, seoDescription: event.target.value })} /></Field>
+            <Field label="Content" wide><textarea rows="8" value={formData.content} onChange={(event) => setFormData({ ...formData, content: event.target.value })} /></Field>
+          </FormGrid>
+          <FormActions saving={saving} editing={Boolean(editingId)} onCancel={resetForm} />
         </form>
       )}
-      <div className="admin-table-wrapper">
-        <table className="admin-table">
-          <thead><tr><th>Name</th><th>Code</th><th>Description</th><th>Action</th></tr></thead>
-          <tbody>
-            {types.map(t => (
-              <tr key={t.id}>
-                <td>{t.name}</td>
-                <td className="text-muted">{t.code}</td>
-                <td className="text-muted text-sm">{t.description || '—'}</td>
-                <td><button className="admin-btn edit" onClick={() => { setEditingId(t.id); setFormData({ name: t.name, code: t.code, description: t.description || '' }); setShowForm(true); }}><Edit size={14} /></button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+
+      <ResponsiveTable emptyText="No content pages found." colSpan={5}>
+        <thead>
+          <tr><th>Title</th><th>Slug</th><th>SEO title</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {pages.map((page) => (
+            <tr key={page.id}>
+              <td><strong>{page.title}</strong></td>
+              <td className="muted-cell">/{page.slug}</td>
+              <td>{getContentSeoTitle(page) || 'Not set'}</td>
+              <td><StatusPill status={getContentPublished(page) ? 'published' : 'draft'} /></td>
+              <td>
+                <IconButton
+                  label="Edit"
+                  tone="primary"
+                  onClick={() => {
+                    setEditingId(page.id);
+                    setFormData({
+                      slug: page.slug || '',
+                      title: page.title || '',
+                      content: page.content || '',
+                      seoTitle: getContentSeoTitle(page),
+                      seoDescription: getContentSeoDescription(page),
+                      isPublished: getContentPublished(page),
+                    });
+                    setShowForm(true);
+                  }}
+                >
+                  <Edit3 size={15} />
+                </IconButton>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </ResponsiveTable>
     </div>
   );
 };
 
-// ─── Content Tab ────────────────────────────────────────
-const ContentTab = () => {
-  const [pages, setPages] = useState([]);
-  const [loading, setLoading] = useState(true);
+const SystemSection = ({ vehicleTypes, setVehicleTypes }) => {
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ slug: '', title: '', content: '', seoTitle: '', seoDescription: '' });
   const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState(initialVehicleForm);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    contentApi.list().then(d => setPages(d.contentPages || d.pages || d.content || d || [])).catch((err) => toast.error(err.message || 'Failed to load content')).finally(() => setLoading(false));
-  }, []);
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setFormData(initialVehicleForm);
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const saveVehicleType = async (event) => {
+    event.preventDefault();
     setSaving(true);
     try {
       if (editingId) {
-        await contentApi.update(editingId, formData);
-        setPages(prev => prev.map(p => p.id === editingId ? { ...p, ...formData } : p));
+        const data = await vehicleTypesApi.update(editingId, formData);
+        setVehicleTypes((prev) => prev.map((item) => (item.id === editingId ? data.vehicleType || { ...item, ...formData } : item)));
+        toast.success('Vehicle type updated');
       } else {
-        const res = await contentApi.create(formData);
-        setPages(prev => [...prev, res.page || res]);
+        const data = await vehicleTypesApi.create(formData);
+        setVehicleTypes((prev) => [...prev, data.vehicleType || data]);
+        toast.success('Vehicle type created');
       }
-      setShowForm(false);
-      setEditingId(null);
-      setFormData({ slug: '', title: '', content: '', seoTitle: '', seoDescription: '' });
-    } catch (err) { toast.error(err.message || 'Failed to save content'); }
-    finally { setSaving(false); }
+      resetForm();
+    } catch (err) {
+      toast.error(err.message || 'Failed to save vehicle type');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (loading) return <AdminLoader />;
-
   return (
-    <div className="admin-card">
-      <div className="admin-card-header">
-        <h3 className="h4">Content Pages ({pages.length})</h3>
-        <button className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }} onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({ slug: '', title: '', content: '', seoTitle: '', seoDescription: '' }); }}>
-          {showForm ? 'Cancel' : <><Plus size={16} /> Add Page</>}
-        </button>
-      </div>
+    <div className="admin-panel">
+      <PanelHeader
+        title="System setup"
+        subtitle="Configure vehicle types and platform options used by bookings and instructor profiles."
+        actionLabel={showForm ? 'Close form' : 'Add vehicle type'}
+        onAction={() => {
+          setShowForm(!showForm);
+          if (!showForm) {
+            setEditingId(null);
+            setFormData(initialVehicleForm);
+          }
+        }}
+      />
+
       {showForm && (
-        <form onSubmit={handleSubmit} className="admin-form">
-          <div className="admin-form-grid">
-            <div className="form-group"><label>Title</label><input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required /></div>
-            <div className="form-group"><label>Slug</label><input value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} required placeholder="e.g. about-us" /></div>
-            <div className="form-group"><label>SEO Title</label><input value={formData.seoTitle} onChange={(e) => setFormData({ ...formData, seoTitle: e.target.value })} /></div>
-            <div className="form-group"><label>SEO Description</label><input value={formData.seoDescription} onChange={(e) => setFormData({ ...formData, seoDescription: e.target.value })} /></div>
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>Content</label><textarea value={formData.content} onChange={(e) => setFormData({ ...formData, content: e.target.value })} rows="6" required /></div>
-          </div>
-          <button type="submit" className="btn btn-primary" disabled={saving} style={{ marginTop: '1rem' }}>
-            {saving ? <Loader size={16} className="spin-icon" /> : editingId ? 'Update Page' : 'Create Page'}
-          </button>
+        <form className="admin-form-card" onSubmit={saveVehicleType}>
+          <FormGrid>
+            <Field label="Name"><input value={formData.name} onChange={(event) => setFormData({ ...formData, name: event.target.value })} required /></Field>
+            <Field label="Code"><input value={formData.code} onChange={(event) => setFormData({ ...formData, code: event.target.value })} required /></Field>
+            <Field label="Description" wide><input value={formData.description} onChange={(event) => setFormData({ ...formData, description: event.target.value })} /></Field>
+          </FormGrid>
+          <FormActions saving={saving} editing={Boolean(editingId)} onCancel={resetForm} />
         </form>
       )}
-      <div className="admin-table-wrapper">
-        <table className="admin-table">
-          <thead><tr><th>Title</th><th>Slug</th><th>Published</th><th>Action</th></tr></thead>
-          <tbody>
-            {pages.length === 0 ? (
-              <tr><td colSpan={4} className="text-center text-muted" style={{ padding: '2rem' }}>No content pages yet.</td></tr>
-            ) : pages.map(p => (
-              <tr key={p.id}>
-                <td>{p.title}</td>
-                <td className="text-muted">/{p.slug}</td>
-                <td><span className={`admin-status ${p.isPublished !== false ? 'active' : 'inactive'}`}>{p.isPublished !== false ? 'Yes' : 'No'}</span></td>
-                <td><button className="admin-btn edit" onClick={() => { setEditingId(p.id); setFormData({ slug: p.slug, title: p.title, content: p.content || '', seoTitle: p.seoTitle || '', seoDescription: p.seoDescription || '' }); setShowForm(true); }}><Edit size={14} /></button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+
+      <ResponsiveTable emptyText="No vehicle types configured." colSpan={4}>
+        <thead>
+          <tr><th>Name</th><th>Code</th><th>Description</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {vehicleTypes.map((type) => (
+            <tr key={type.id}>
+              <td><strong>{type.name}</strong></td>
+              <td className="muted-cell">{type.code}</td>
+              <td>{type.description || 'Not set'}</td>
+              <td>
+                <IconButton
+                  label="Edit"
+                  tone="primary"
+                  onClick={() => {
+                    setEditingId(type.id);
+                    setFormData({ name: type.name || '', code: type.code || '', description: type.description || '', isActive: type.isActive !== false });
+                    setShowForm(true);
+                  }}
+                >
+                  <Edit3 size={15} />
+                </IconButton>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </ResponsiveTable>
     </div>
   );
 };
 
-const AdminLoader = () => (
-  <div className="text-center" style={{ padding: '3rem' }}>
-    <Loader size={32} className="spin-icon icon-blue" />
-    <p className="text-muted" style={{ marginTop: '1rem' }}>Loading...</p>
+const PanelHeader = ({ title, subtitle, actionLabel, onAction }) => (
+  <div className="admin-panel-header">
+    <div>
+      <h2>{title}</h2>
+      {subtitle && <p>{subtitle}</p>}
+    </div>
+    {actionLabel && (
+      <button className="admin-action primary" onClick={onAction} type="button">
+        <Plus size={16} /> {actionLabel}
+      </button>
+    )}
+  </div>
+);
+
+const SearchBox = ({ value, onChange, placeholder }) => (
+  <label className="admin-search-box">
+    <Search size={17} />
+    <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+  </label>
+);
+
+const ResponsiveTable = ({ children, emptyText, colSpan }) => {
+  const body = children?.find?.((child) => child?.type === 'tbody');
+  const rowCount = Children.count(body?.props?.children);
+
+  return (
+    <div className="admin-table-wrap">
+      <table className="admin-data-table">
+        {children}
+        {!rowCount && (
+          <tbody>
+            <tr>
+              <td colSpan={colSpan}>
+                <EmptyState icon={AlertCircle} title={emptyText} message="Try changing filters or refresh the dashboard." compact />
+              </td>
+            </tr>
+          </tbody>
+        )}
+      </table>
+    </div>
+  );
+};
+
+const LogTimeline = ({ logs, expanded = false }) => {
+  if (!logs?.length) {
+    return <EmptyState icon={Activity} title="No activity yet" message="System events will appear here once users start taking actions." compact />;
+  }
+
+  return (
+    <div className={`admin-log-timeline ${expanded ? 'expanded' : ''}`}>
+      {logs.map((log) => (
+        <article className="admin-log-row" key={log.id}>
+          <span className="admin-log-dot" />
+          <div>
+            <strong>{log.summary || toTitle(log.action)}</strong>
+            <small>
+              {log.actorName || log.actor_name || 'System'} • {toTitle(log.actorRole || log.actor_role)}
+              {' '}• {formatDateTime(log.createdAt || log.created_at)}
+            </small>
+          </div>
+          <StatusPill status={log.entityType || log.entity_type || 'event'} />
+        </article>
+      ))}
+    </div>
+  );
+};
+
+const EmptyState = ({ icon: Icon, title, message, compact = false }) => (
+  <div className={`admin-empty-state ${compact ? 'compact' : ''}`}>
+    <Icon size={compact ? 22 : 32} />
+    <strong>{title}</strong>
+    <span>{message}</span>
+  </div>
+);
+
+const StatusPill = ({ status }) => <span className={`admin-pill status-${String(status || 'unknown').toLowerCase()}`}>{toTitle(status)}</span>;
+const RolePill = ({ role }) => <span className={`admin-pill role-${String(role || 'unknown').toLowerCase()}`}>{toTitle(role)}</span>;
+
+const IconButton = ({ children, label, tone = 'neutral', onClick }) => (
+  <button className={`admin-icon-btn ${tone}`} type="button" onClick={onClick} title={label} aria-label={label}>
+    {children}
+  </button>
+);
+
+const ActionGroup = ({ children }) => <div className="admin-action-group">{children}</div>;
+const FormGrid = ({ children }) => <div className="admin-form-grid">{children}</div>;
+const Field = ({ label, children, wide }) => <label className={wide ? 'admin-field wide' : 'admin-field'}><span>{label}</span>{children}</label>;
+
+const FormActions = ({ saving, editing, onCancel }) => (
+  <div className="admin-form-actions">
+    <button className="admin-action primary" type="submit" disabled={saving}>
+      {saving ? <Loader size={16} className="spin-icon" /> : <Save size={16} />}
+      {editing ? 'Update' : 'Create'}
+    </button>
+    <button className="admin-action ghost" type="button" onClick={onCancel}>Cancel</button>
   </div>
 );
 

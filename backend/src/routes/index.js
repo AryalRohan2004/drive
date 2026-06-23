@@ -15,6 +15,7 @@ import learnerDocuments from './learnerDocuments.js';
 import assignments from './assignments.js';
 import transferRequests from './transferRequests.js';
 import matching from './matching.js';
+import auditLogs from './auditLogs.js';
 
 const router = Router();
 
@@ -34,5 +35,6 @@ router.use('/learner-documents', learnerDocuments);
 router.use('/assignments', assignments);
 router.use('/transfer-requests', transferRequests);
 router.use('/matching', matching);
+router.use('/audit-logs', auditLogs);
 
 export default router;

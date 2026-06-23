@@ -75,6 +75,8 @@ export const usersApi = {
   list: (params = '') => request(`/users${params ? `?${params}` : ''}`),
   getById: (id) => request(`/users/${id}`),
   updateById: (id, body) => request(`/users/${id}`, { method: 'PATCH', body }),
+  approveInstructor: (id) => request(`/users/${id}/approve-instructor`, { method: 'POST' }),
+  rejectInstructor: (id) => request(`/users/${id}/reject-instructor`, { method: 'POST' }),
 };
 
 // ─── Packages ───────────────────────────────────────────
@@ -108,7 +110,13 @@ export const dashboardApi = {
   learner: () => request('/dashboard/learner'),
   updateLearnerProgress: (body) => request('/dashboard/learner/progress', { method: 'PATCH', body }),
   instructor: () => request('/dashboard/instructor'),
+  admin: () => request('/dashboard/admin'),
   completeLesson: (id) => request(`/dashboard/instructor/lessons/${id}/complete`, { method: 'POST' }),
+};
+
+// ─── Audit Logs ────────────────────────────────────────
+export const auditLogsApi = {
+  list: (params = '') => request(`/audit-logs${params ? `?${params}` : ''}`),
 };
 
 // ─── Availability ───────────────────────────────────────

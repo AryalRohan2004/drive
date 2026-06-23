@@ -50,7 +50,6 @@ const getRouteMetrics = async (fromLat, fromLng, toLat, toLng) => {
   routeCache.set(cacheKey, metrics);
   return metrics;
 };
-
 export const findNearbyInstructors = asyncHandler(async (req, res) => {
   const { latitude, longitude, vehicleType, limit = 5, date, time } = req.query;
   const lat = Number(latitude);

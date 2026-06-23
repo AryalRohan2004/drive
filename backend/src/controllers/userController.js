@@ -2,9 +2,12 @@ import { z } from 'zod';
 import { query } from '../config/db.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { logAudit } from '../utils/auditLogger.js';
 
 const updateProfileSchema = z.object({
   fullName: z.string().min(2).optional(),
+  role: z.enum(['learner', 'instructor', 'admin']).optional(),
+  status: z.enum(['pending', 'active', 'rejected', 'suspended', 'inactive']).optional(),
   phone: z.string().optional().nullable(),
   dateOfBirth: z.string().date().optional().nullable(),
   address: z.string().optional().nullable(),
@@ -14,6 +17,7 @@ const updateProfileSchema = z.object({
   transmissionPreference: z.string().optional().nullable(),
   logbookHours: z.coerce.number().int().min(0).optional(),
   progressPercent: z.coerce.number().int().min(0).max(100).optional(),
+  learningStatus: z.enum(['not_started', 'active', 'paused', 'transferred', 'completed']).optional(),
   licenseNumber: z.string().optional().nullable(),
   serviceAreas: z.array(z.string()).optional(),
   bio: z.string().optional().nullable(),
@@ -51,6 +55,7 @@ const mapUser = (row) => ({
   transmissionPreference: row.transmission_preference,
   logbookHours: row.logbook_hours,
   progressPercent: row.progress_percent,
+  learningStatus: row.learning_status,
   licenseNumber: row.license_number,
   serviceAreas: row.service_areas || [],
   bio: row.bio,
@@ -77,6 +82,8 @@ const mapUser = (row) => ({
 
 const updateFieldConfig = {
   fullName: { column: 'full_name' },
+  role: { column: 'role' },
+  status: { column: 'status' },
   phone: { column: 'phone' },
   dateOfBirth: { column: 'date_of_birth' },
   address: { column: 'address' },
@@ -86,6 +93,7 @@ const updateFieldConfig = {
   transmissionPreference: { column: 'transmission_preference' },
   logbookHours: { column: 'logbook_hours' },
   progressPercent: { column: 'progress_percent' },
+  learningStatus: { column: 'learning_status' },
   licenseNumber: { column: 'license_number' },
   serviceAreas: { column: 'service_areas', cast: '::text[]' },
   bio: { column: 'bio' },
@@ -136,6 +144,11 @@ export const listUsers = asyncHandler(async (req, res) => {
     values.push(req.query.role);
   }
 
+  if (req.query.status) {
+    filters.push(`status = $${idx++}`);
+    values.push(req.query.status);
+  }
+
   if (req.query.search) {
     filters.push(`(full_name ILIKE $${idx} OR email ILIKE $${idx})`);
     values.push(`%${req.query.search}%`);
@@ -159,7 +172,7 @@ export const listUsers = asyncHandler(async (req, res) => {
   const offset = (page - 1) * limit;
 
   const result = await query(
-    `SELECT id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at
+    `SELECT id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, learning_status, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at
      FROM users
      ${filters.length ? `WHERE ${filters.join(' AND ')}` : ''}
      ORDER BY created_at DESC
@@ -176,7 +189,7 @@ export const listUsers = asyncHandler(async (req, res) => {
 
 export const getUserById = asyncHandler(async (req, res) => {
   const result = await query(
-    'SELECT id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at FROM users WHERE id = $1',
+    'SELECT id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, learning_status, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at FROM users WHERE id = $1',
     [req.params.id]
   );
 
@@ -184,12 +197,23 @@ export const getUserById = asyncHandler(async (req, res) => {
     throw new AppError('User not found', 404);
   }
 
+  await logAudit({
+    actor: req.user,
+    action: 'user.updated',
+    entityType: 'user',
+    entityId: result.rows[0].id,
+    targetUserId: result.rows[0].id,
+    targetUserRole: result.rows[0].role,
+    summary: `Admin updated ${result.rows[0].role} ${result.rows[0].full_name}`,
+    metadata: { changes: parsed.data },
+  });
+
   res.json({ user: mapUser(result.rows[0]) });
 });
 
 export const getMe = asyncHandler(async (req, res) => {
   const result = await query(
-    'SELECT id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at FROM users WHERE id = $1',
+    'SELECT id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, learning_status, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at FROM users WHERE id = $1',
     [req.user.id]
   );
 
@@ -205,7 +229,10 @@ export const updateMe = asyncHandler(async (req, res) => {
   if (!parsed.success) {
     throw new AppError(parsed.error.issues[0]?.message || 'Invalid profile payload', 400);
   }
-  const { fields, values } = buildUpdateFragments(parsed.data);
+  const selfEditableData = { ...parsed.data };
+  delete selfEditableData.role;
+  delete selfEditableData.status;
+  const { fields, values } = buildUpdateFragments(selfEditableData);
 
   if (fields.length === 0) {
     throw new AppError('No changes submitted', 400);
@@ -215,7 +242,7 @@ export const updateMe = asyncHandler(async (req, res) => {
 
   const result = await query(
     `UPDATE users SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${values.length}
-     RETURNING id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at`,
+     RETURNING id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, learning_status, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at`,
     values
   );
 
@@ -237,13 +264,68 @@ export const updateUserById = asyncHandler(async (req, res) => {
 
   const result = await query(
     `UPDATE users SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${values.length}
-     RETURNING id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at`,
+     RETURNING id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, learning_status, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at`,
     values
   );
 
   if (result.rowCount === 0) {
     throw new AppError('User not found', 404);
   }
+
+  res.json({ user: mapUser(result.rows[0]) });
+});
+
+export const approveInstructor = asyncHandler(async (req, res) => {
+  const result = await query(
+    `UPDATE users
+     SET status = 'active', updated_at = NOW()
+     WHERE id = $1 AND role = 'instructor'
+     RETURNING id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, learning_status, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at`,
+    [req.params.id]
+  );
+
+  if (result.rowCount === 0) {
+    throw new AppError('Pending instructor not found', 404);
+  }
+
+  await logAudit({
+    actor: req.user,
+    action: 'instructor.approved',
+    entityType: 'user',
+    entityId: result.rows[0].id,
+    targetUserId: result.rows[0].id,
+    targetUserRole: 'instructor',
+    summary: `Admin approved instructor ${result.rows[0].full_name}`,
+    metadata: { email: result.rows[0].email },
+  });
+
+  res.json({ user: mapUser(result.rows[0]) });
+});
+
+export const rejectInstructor = asyncHandler(async (req, res) => {
+  const result = await query(
+    `UPDATE users
+     SET status = 'rejected',
+         updated_at = NOW()
+     WHERE id = $1 AND role = 'instructor'
+     RETURNING id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, learning_status, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at`,
+    [req.params.id]
+  );
+
+  if (result.rowCount === 0) {
+    throw new AppError('Instructor not found', 404);
+  }
+
+  await logAudit({
+    actor: req.user,
+    action: 'instructor.rejected',
+    entityType: 'user',
+    entityId: result.rows[0].id,
+    targetUserId: result.rows[0].id,
+    targetUserRole: 'instructor',
+    summary: `Admin rejected instructor ${result.rows[0].full_name}`,
+    metadata: { email: result.rows[0].email },
+  });
 
   res.json({ user: mapUser(result.rows[0]) });
 });

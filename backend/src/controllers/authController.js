@@ -7,6 +7,7 @@ import { env } from '../config/env.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendEmail } from '../services/emailService.js';
+import { logAudit } from '../utils/auditLogger.js';
 
 const nameRegex = /^[A-Za-z][A-Za-z\s.'-]{1,59}$/;
 const mobileRegex = /^[0-9+\-\s()]{8,15}$/;
@@ -79,7 +80,7 @@ const resetSchema = z.object({
 const userSelect = `
   id, full_name, email, phone, role, status,
   date_of_birth, address, suburb, postcode, license_type,
-  transmission_preference, logbook_hours, progress_percent, license_number, service_areas, bio,
+  transmission_preference, logbook_hours, progress_percent, learning_status, license_number, service_areas, bio,
   availability, preferred_vehicle_type, pickup_address, pickup_suburb,
   pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone,
   preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported,
@@ -101,6 +102,7 @@ const mapUser = (row) => ({
   transmissionPreference: row.transmission_preference,
   logbookHours: row.logbook_hours,
   progressPercent: row.progress_percent,
+  learningStatus: row.learning_status,
   licenseNumber: row.license_number,
   serviceAreas: row.service_areas || [],
   bio: row.bio,
@@ -278,6 +280,16 @@ export const register = asyncHandler(async (req, res) => {
     await query('COMMIT');
 
     const user = mapUser(result.rows[0]);
+    await logAudit({
+      actor: user,
+      action: `${role}.registered`,
+      entityType: 'user',
+      entityId: user.id,
+      targetUserId: user.id,
+      targetUserRole: role,
+      summary: `${role} registered`,
+      metadata: { status: user.status, email: user.email },
+    });
     const token = signToken(user.id, user.role);
 
     res.status(201).json({ user, accessToken: token });

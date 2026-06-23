@@ -31,6 +31,7 @@ model User {
   specialRequirements     String?   @map("special_requirements")
   logbookHours            Int       @default(0) @map("logbook_hours")
   progressPercent         Int       @default(0) @map("progress_percent")
+  learningStatus          String    @default("not_started") @map("learning_status")
   licenseNumber           String?   @map("license_number")
   serviceAreas            String[]  @default([]) @map("service_areas")
   bio                     String?
@@ -64,8 +65,30 @@ model User {
   transferRequestsFromInstructor TransferRequest[] @relation("TransferFromInstructor")
   transferRequestsToInstructor TransferRequest[]  @relation("TransferToInstructor")
   instructorProfile        InstructorProfile?
+  auditLogsAsActor         AuditLog[]             @relation("AuditActor")
+  auditLogsAsTarget        AuditLog[]             @relation("AuditTarget")
 
   @@map("users")
+}
+
+model AuditLog {
+  id             String   @id
+  actorId        String?  @map("actor_id")
+  actorRole      String?  @map("actor_role")
+  actorName      String?  @map("actor_name")
+  action         String
+  entityType     String   @map("entity_type")
+  entityId       String?  @map("entity_id")
+  targetUserId   String?  @map("target_user_id")
+  targetUserRole String?  @map("target_user_role")
+  summary        String?
+  metadata       Json
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  targetUser User? @relation("AuditTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
 }
 
 model InstructorProfile {
