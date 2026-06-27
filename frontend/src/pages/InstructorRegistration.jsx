@@ -604,7 +604,7 @@ const InstructorRegistration = () => {
                 <div className="form-group full-width" style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
                   <div className="checkbox-item mb-3">
                     <input type="checkbox" id="agreeCommission" name="agreeCommission" checked={formData.agreeCommission} onChange={handleChange} onBlur={handleBlur} required className={showFieldError('agreeCommission') ? 'input-error' : ''} />
-                    <label htmlFor="agreeCommission"><strong>I agree to the 20% Platform Commission fee on all bookings generated through SANOS.</strong></label>
+                    <label htmlFor="agreeCommission"><strong>I agree to the 20% Platform Commission fee on all bookings generated through SANOS (waived for the first 3 months).</strong></label>
                   </div>
                   {renderFieldError('agreeCommission')}
                   <div className="checkbox-item mb-3">
