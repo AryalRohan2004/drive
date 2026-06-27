@@ -97,6 +97,36 @@ export const learnerDashboard = asyncHandler(async (req, res) => {
     [userId]
   );
 
+  const activityDataResult = await query(
+    `SELECT b.lesson_date, COALESCE(p.duration_minutes, 60) as duration_minutes
+     FROM bookings b
+     LEFT JOIN lesson_packages p ON p.id = b.package_id
+     WHERE b.user_id = $1 AND b.status = 'completed'
+     ORDER BY b.lesson_date ASC`,
+    [userId]
+  );
+
+  let cumulativeHours = 0;
+  let activityData = [];
+  if (activityDataResult.rowCount > 0) {
+    activityData = activityDataResult.rows.map(row => {
+      cumulativeHours += (row.duration_minutes / 60);
+      return {
+        date: row.lesson_date,
+        hours: cumulativeHours
+      };
+    });
+    const userHours = user.rows[0]?.logbook_hours ?? 0;
+    if (userHours > cumulativeHours) {
+      activityData.push({ name: 'Current', hours: userHours });
+    }
+  } else {
+    activityData = [
+      { name: 'Start', hours: 0 },
+      { name: 'Current', hours: user.rows[0]?.logbook_hours ?? 0 }
+    ];
+  }
+
   res.json({
     upcomingLesson: upcoming.rows[0] ? mapBookingSummary(upcoming.rows[0]) : null,
     progressPercent: user.rows[0]?.progress_percent ?? 0,
@@ -114,6 +144,7 @@ export const learnerDashboard = asyncHandler(async (req, res) => {
     instructorNotes: notes.rows,
     learnerDocuments: documents.rows,
     transferRequests: transfers.rows,
+    activityData,
   });
 });
 
@@ -171,13 +202,20 @@ export const instructorDashboard = asyncHandler(async (req, res) => {
   );
 
   const weeklyLessons = await query(
-    `SELECT TO_CHAR(lesson_date, 'Dy') as day_name, COUNT(*)::int as count
-     FROM bookings
-     WHERE instructor_id = $1 
-       AND lesson_date >= CURRENT_DATE - INTERVAL '6 days'
-       AND lesson_date <= CURRENT_DATE + INTERVAL '1 day'
-     GROUP BY TO_CHAR(lesson_date, 'Dy'), lesson_date
-     ORDER BY lesson_date`,
+    `WITH dates AS (
+       SELECT generate_series(
+         CURRENT_DATE - INTERVAL '6 days',
+         CURRENT_DATE,
+         '1 day'::interval
+       )::date AS d_date
+     )
+     SELECT 
+       TO_CHAR(d.d_date, 'Dy') as name,
+       COALESCE(COUNT(b.id), 0)::int as lessons
+     FROM dates d
+     LEFT JOIN bookings b ON b.lesson_date = d.d_date AND b.instructor_id = $1
+     GROUP BY d.d_date
+     ORDER BY d.d_date`,
     [instructorId]
   );
 

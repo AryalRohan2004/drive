@@ -61,32 +61,23 @@ const LearnerDashboard = () => {
   const hoursLogged = d.hoursLogged ?? d.stats?.hoursLogged ?? user?.logbookHours ?? 0;
   const recentBookings = d.lessonHistory || d.recentBookings || d.bookings || [];
 
-  // Dynamic Activity Data based on lessonHistory
-  const completedLessons = [...recentBookings]
-    .filter(b => b.status === 'completed')
-    .sort((a, b) => new Date(a.date || a.sessionDate || a.lesson_date || a.createdAt) - new Date(b.date || b.sessionDate || b.lesson_date || b.createdAt));
-
-  let activityData = [];
-  if (completedLessons.length > 0) {
-    let cumulative = 0;
-    activityData = completedLessons.map((lesson) => {
-      cumulative += (lesson.durationHours || 1);
-      const dateObj = new Date(lesson.date || lesson.sessionDate || lesson.lesson_date || lesson.createdAt);
-      return {
-        name: dateObj.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' }),
-        hours: cumulative,
-      };
+  // Use backend activityData if provided
+  let activityData = d.activityData || [];
+  
+  // For the frontend line chart, map dates to 'name' (e.g. 'Oct 15')
+  if (activityData.length > 0) {
+    activityData = activityData.map(point => {
+      if (point.date) {
+        const dateObj = new Date(point.date);
+        return {
+          ...point,
+          name: dateObj.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' }),
+        };
+      }
+      return point;
     });
-    
-    // If backend reports more hours than history has, append a 'Current' point
-    if (hoursLogged > cumulative) {
-      activityData.push({
-        name: 'Current',
-        hours: hoursLogged
-      });
-    }
   } else {
-    // Fallback if no completed lessons are found yet
+    // Fallback if no backend data
     activityData = [
       { name: 'Start', hours: 0 },
       { name: 'Current', hours: hoursLogged || 0 }

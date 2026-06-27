@@ -65,32 +65,15 @@ const InstructorDashboard = () => {
   );
 
   // Dynamic data for weekly schedule chart based on backend
-  const backendWeeklyLessons = d.weeklyLessons || [];
-  
-  let weeklyScheduleData = [];
-  if (backendWeeklyLessons.length > 0) {
-    weeklyScheduleData = backendWeeklyLessons.map(item => ({
-      name: item.day_name,
-      lessons: item.count
-    }));
-  } else {
-    // Fallback if no data or no lessons in the last 7 days
-    weeklyScheduleData = [
-      { name: 'Mon', lessons: 0 },
-      { name: 'Tue', lessons: 0 },
-      { name: 'Wed', lessons: 0 },
-      { name: 'Thu', lessons: 0 },
-      { name: 'Fri', lessons: 0 },
-      { name: 'Sat', lessons: 0 },
-      { name: 'Sun', lessons: 0 },
-    ];
-    // We can inject today's lessons count into the fallback for realism if we want
-    if (todayLessons.length > 0) {
-      const todayDayName = new Date().toLocaleDateString('en-US', { weekday: 'short' });
-      const index = weeklyScheduleData.findIndex(d => d.name === todayDayName);
-      if (index !== -1) weeklyScheduleData[index].lessons = todayLessons.length;
-    }
-  }
+  const weeklyScheduleData = d.weeklyLessons || [
+    { name: 'Mon', lessons: 0 },
+    { name: 'Tue', lessons: 0 },
+    { name: 'Wed', lessons: 0 },
+    { name: 'Thu', lessons: 0 },
+    { name: 'Fri', lessons: 0 },
+    { name: 'Sat', lessons: 0 },
+    { name: 'Sun', lessons: 0 },
+  ];
 
   return (
     <div className="dashboard-page section">
