@@ -170,6 +170,17 @@ export const instructorDashboard = asyncHandler(async (req, res) => {
     [instructorId]
   );
 
+  const weeklyLessons = await query(
+    `SELECT TO_CHAR(lesson_date, 'Dy') as day_name, COUNT(*)::int as count
+     FROM bookings
+     WHERE instructor_id = $1 
+       AND lesson_date >= CURRENT_DATE - INTERVAL '6 days'
+       AND lesson_date <= CURRENT_DATE + INTERVAL '1 day'
+     GROUP BY TO_CHAR(lesson_date, 'Dy'), lesson_date
+     ORDER BY lesson_date`,
+    [instructorId]
+  );
+
   res.json({
     todayLessons: todayLessons.rows,
     students: students.rows,
@@ -177,6 +188,7 @@ export const instructorDashboard = asyncHandler(async (req, res) => {
     assignments: assignments.rows,
     transferRequests: transferRequests.rows,
     quickStats: stats.rows[0],
+    weeklyLessons: weeklyLessons.rows,
   });
 });
 
