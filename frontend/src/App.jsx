@@ -66,7 +66,6 @@ function App() {
           <Route path="faq" element={<FAQ />} />
           <Route path="testimonials" element={<Testimonials />} />
           <Route path="find-instructor" element={<FindInstructor />} />
-          <Route path="book" element={<Booking />} />
 
           {/* Auth pages */}
           <Route path="login" element={<Auth defaultIsLogin={true} />} />
@@ -76,6 +75,7 @@ function App() {
           <Route path="reset-password" element={<ResetPassword />} />
 
           {/* Protected: Any authenticated user */}
+          <Route path="book" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
           <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="assignments" element={<ProtectedRoute><Assignments /></ProtectedRoute>} />
           <Route path="documents" element={<ProtectedRoute roles={['learner', 'admin']}><Documents /></ProtectedRoute>} />

@@ -87,6 +87,12 @@ const Booking = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      toast.error('Please sign in or create an account to confirm your booking.');
+      navigate('/login', { state: { from: { pathname: '/book' } } });
+      return;
+    }
+    
     setSubmitting(true);
 
     try {
