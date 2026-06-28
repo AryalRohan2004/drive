@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Calendar, Clock, CreditCard, CheckCircle, ChevronRight, ChevronLeft, AlertCircle, Loader, Car } from 'lucide-react';
-import { packagesApi, availabilityApi, bookingsApi, vehicleTypesApi } from '../services/api';
+import { Calendar, Clock, CreditCard, CheckCircle, ChevronRight, ChevronLeft, AlertCircle, Loader, Car, User } from 'lucide-react';
+import { packagesApi, availabilityApi, bookingsApi, vehicleTypesApi, usersApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import './Booking.css';
@@ -14,6 +14,7 @@ const Booking = () => {
 
   const [packages, setPackages] = useState([]);
   const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [instructors, setInstructors] = useState([]);
   const [timeSlots, setTimeSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -23,6 +24,8 @@ const Booking = () => {
     packageId: '',
     packageName: '',
     packagePrice: 0,
+    instructorId: '',
+    instructorName: '',
     date: '',
     time: '',
     pickupAddress: '',
@@ -34,12 +37,14 @@ const Booking = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [pkgRes, vtRes] = await Promise.all([
+        const [pkgRes, vtRes, instRes] = await Promise.all([
           packagesApi.list().catch(() => ({ packages: [] })),
           vehicleTypesApi.list().catch(() => ({ vehicleTypes: [] })),
+          usersApi.list('role=INSTRUCTOR').catch(() => ({ users: [] })),
         ]);
         setPackages(pkgRes.packages || pkgRes || []);
         setVehicleTypes(vtRes.vehicleTypes || vtRes || []);
+        setInstructors(instRes.users || instRes.data || instRes || []);
       } catch {
         // Use fallback data if API is not running
         setPackages([
@@ -50,6 +55,11 @@ const Booking = () => {
         setVehicleTypes([
           { id: '1', code: 'auto', name: 'Automatic' },
           { id: '2', code: 'manual', name: 'Manual' },
+        ]);
+        setInstructors([
+          { id: '1', name: 'John Doe', email: 'john@example.com' },
+          { id: '2', name: 'Jane Smith', email: 'jane@example.com' },
+          { id: '3', name: 'Mike Johnson', email: 'mike@example.com' },
         ]);
       } finally {
         setLoading(false);
@@ -63,14 +73,14 @@ const Booking = () => {
     if (!bookingData.date) return;
     const fetchSlots = async () => {
       try {
-        const res = await availabilityApi.get(`date=${bookingData.date}&vehicleType=${bookingData.vehicleType}`);
+        const res = await availabilityApi.get(`date=${bookingData.date}&vehicleType=${bookingData.vehicleType}&instructorId=${bookingData.instructorId}`);
         setTimeSlots(res.slots || res.availability || []);
       } catch {
         setTimeSlots(['09:00 AM', '11:00 AM', '02:00 PM', '04:00 PM']);
       }
     };
     fetchSlots();
-  }, [bookingData.date, bookingData.vehicleType]);
+  }, [bookingData.date, bookingData.vehicleType, bookingData.instructorId]);
 
   const handleNext = () => { setStep(step + 1); };
   const handlePrev = () => { setStep(step - 1); };
@@ -83,13 +93,14 @@ const Booking = () => {
       await bookingsApi.create({
         packageId: bookingData.packageId || undefined,
         vehicleType: bookingData.vehicleType,
+        instructorId: bookingData.instructorId || undefined,
         preferredDate: bookingData.date,
         preferredTime: bookingData.time,
         pickupAddress: bookingData.pickupAddress || undefined,
         notes: bookingData.notes || undefined,
       });
       toast.success('Booking confirmed successfully!');
-      setStep(5);
+      setStep(6);
     } catch (err) {
       toast.error(err.message || 'Failed to create booking. Please try again.');
     } finally {
@@ -112,15 +123,17 @@ const Booking = () => {
     <div className="booking-page bg-light section">
       <div className="container" style={{ maxWidth: '800px' }}>
 
-        {step < 5 && (
+        {step < 6 && (
           <div className="wizard-progress">
             <div className={`step-indicator ${step >= 1 ? 'active' : ''}`}>1. Vehicle</div>
             <div className="step-line"></div>
             <div className={`step-indicator ${step >= 2 ? 'active' : ''}`}>2. Package</div>
             <div className="step-line"></div>
-            <div className={`step-indicator ${step >= 3 ? 'active' : ''}`}>3. Schedule</div>
+            <div className={`step-indicator ${step >= 3 ? 'active' : ''}`}>3. Instructor</div>
             <div className="step-line"></div>
-            <div className={`step-indicator ${step >= 4 ? 'active' : ''}`}>4. Review</div>
+            <div className={`step-indicator ${step >= 4 ? 'active' : ''}`}>4. Schedule</div>
+            <div className="step-line"></div>
+            <div className={`step-indicator ${step >= 5 ? 'active' : ''}`}>5. Review</div>
           </div>
         )}
 
@@ -184,8 +197,45 @@ const Booking = () => {
             </div>
           )}
 
-          {/* Step 3: Schedule */}
+          {/* Step 3: Instructor */}
           {step === 3 && (
+            <div className="wizard-step fade-in">
+              <h2 className="h2 text-center mb-4">Select an Instructor</h2>
+              <div className="selection-grid">
+                {instructors.length > 0 ? instructors.map(instructor => (
+                  <div
+                    key={instructor.id}
+                    className={`selection-card ${bookingData.instructorId === instructor.id ? 'selected' : ''}`}
+                    onClick={() => setBookingData({ ...bookingData, instructorId: instructor.id, instructorName: instructor.name || `${instructor.firstName} ${instructor.lastName}` })}
+                  >
+                    <User size={28} style={{ marginBottom: '0.5rem' }} />
+                    <h3 className="h4">{instructor.name || `${instructor.firstName || ''} ${instructor.lastName || ''}`.trim() || 'Instructor'}</h3>
+                    {instructor.email && <p className="text-muted text-sm">{instructor.email}</p>}
+                  </div>
+                )) : (
+                  <p className="text-center text-muted" style={{ gridColumn: '1 / -1' }}>No instructors available for the selected vehicle type at the moment. You can skip this step or choose any available if skipping is allowed.</p>
+                )}
+                {/* Option to skip instructor selection (assign any) */}
+                <div
+                    className={`selection-card ${bookingData.instructorId === 'any' ? 'selected' : ''}`}
+                    onClick={() => setBookingData({ ...bookingData, instructorId: 'any', instructorName: 'Any Available Instructor' })}
+                >
+                  <User size={28} style={{ marginBottom: '0.5rem' }} />
+                  <h3 className="h4">Any Instructor</h3>
+                  <p className="text-muted text-sm">We will assign the best instructor for you</p>
+                </div>
+              </div>
+              <div className="wizard-actions">
+                <button className="btn btn-outline" onClick={handlePrev}><ChevronLeft size={20} /> Back</button>
+                <button className="btn btn-primary" onClick={handleNext} disabled={!bookingData.instructorId}>
+                  Next <ChevronRight size={20} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Schedule */}
+          {step === 4 && (
             <div className="wizard-step fade-in">
               <h2 className="h2 text-center mb-4">Choose Date & Time</h2>
               <div className="schedule-layout">
@@ -236,8 +286,8 @@ const Booking = () => {
             </div>
           )}
 
-          {/* Step 4: Review */}
-          {step === 4 && (
+          {/* Step 5: Review */}
+          {step === 5 && (
             <div className="wizard-step fade-in">
               <h2 className="h2 text-center mb-4">Review Your Booking</h2>
 
@@ -249,6 +299,10 @@ const Booking = () => {
                 <div className="summary-row">
                   <span className="text-muted">Package:</span>
                   <strong>{bookingData.packageName}</strong>
+                </div>
+                <div className="summary-row">
+                  <span className="text-muted">Instructor:</span>
+                  <strong>{bookingData.instructorName || 'Any Instructor'}</strong>
                 </div>
                 <div className="summary-row">
                   <span className="text-muted">Date:</span>
@@ -291,8 +345,8 @@ const Booking = () => {
             </div>
           )}
 
-          {/* Step 5: Success */}
-          {step === 5 && (
+          {/* Step 6: Success */}
+          {step === 6 && (
             <div className="wizard-step fade-in text-center py-5">
               <CheckCircle size={64} className="icon-success mx-auto mb-4" style={{ margin: '0 auto' }} />
               <h2 className="h2 mb-3">Booking Confirmed!</h2>
