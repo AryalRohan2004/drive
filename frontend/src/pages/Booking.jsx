@@ -85,6 +85,11 @@ const Booking = () => {
   const handleNext = () => { setStep(step + 1); };
   const handlePrev = () => { setStep(step - 1); };
 
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAuthenticated) {

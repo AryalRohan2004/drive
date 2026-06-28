@@ -55,28 +55,6 @@ const Header = () => {
           {isOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
-
-      {isAuthenticated && (
-        <div className="user-sub-header">
-          <div className="user-sub-header-container">
-            <span className="user-role-badge">Logged in as {role === 'admin' ? 'Admin' : role === 'instructor' ? 'Instructor' : 'Learner'}</span>
-            <div className="user-sub-actions">
-              <Link to={dashboardLink} className="btn btn-outline" onClick={() => setIsOpen(false)}>
-                <LayoutDashboard size={16} style={{ marginRight: '0.25rem' }} />
-                Dashboard
-              </Link>
-              <Link to="/profile" className="btn btn-outline" onClick={() => setIsOpen(false)}>
-                <User size={16} style={{ marginRight: '0.25rem' }} />
-                System
-              </Link>
-              <button className="btn btn-primary" onClick={handleLogout}>
-                <LogOut size={16} style={{ marginRight: '0.25rem' }} />
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 };
