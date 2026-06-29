@@ -46,11 +46,44 @@ export const updateLearnerDocumentStatus = asyncHandler(async (req, res) => {
     rejectionReason: z.string().optional().nullable(),
   }).safeParse(req.body);
   if (!parsed.success) throw new AppError(parsed.error.issues[0]?.message || 'Invalid document status payload', 400);
+
+  const documentResult = await query(
+    `SELECT ld.id, ld.student_id, ld.document_type, ld.file_url, ld.status, ld.rejection_reason, ld.verified_by, ld.created_at, ld.updated_at,
+            u.status AS student_status
+     FROM learner_documents ld
+     LEFT JOIN users u ON u.id = ld.student_id
+     WHERE ld.id = $1`,
+    [req.params.id]
+  );
+
+  if (documentResult.rowCount === 0) {
+    throw new AppError('Document not found', 404);
+  }
+
+  const document = documentResult.rows[0];
+
+  if (req.user.role === 'instructor') {
+    const assignmentResult = await query(
+      `SELECT id
+       FROM student_assignments
+       WHERE student_id = $1
+         AND instructor_id = $2
+         AND status = 'active'
+       ORDER BY started_at DESC
+       LIMIT 1`,
+      [document.student_id, req.user.id]
+    );
+
+    if (req.user.status !== 'active' || assignmentResult.rowCount === 0) {
+      throw new AppError('Only an active assigned instructor can update this learner document', 403);
+    }
+  }
+
   const result = await query(
     `UPDATE learner_documents SET status = $1, rejection_reason = $2, verified_by = $3, updated_at = NOW() WHERE id = $4 RETURNING *`,
     [parsed.data.status, parsed.data.rejectionReason || null, req.user.id, req.params.id]
   );
-  if (result.rowCount === 0) throw new AppError('Document not found', 404);
+
   await logAudit({
     actor: req.user,
     action: `learner_document.${parsed.data.status}`,

@@ -198,24 +198,19 @@
   font-weight: 500;
 }
 
-.input-with-icon {
-  position: relative;
-}
-
-.input-icon {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #9CA3AF;
-}
-
-.input-with-icon input {
+.hero-search-input {
   width: 100%;
-  padding: 0.8rem 1rem 0.8rem 2.5rem;
+  padding: 0.8rem 1rem;
   border: 1px solid #E5E7EB;
   border-radius: 0.5rem;
   font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.hero-search-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .form-row {

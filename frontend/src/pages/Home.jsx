@@ -1,6 +1,5 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, CalendarCheck, TrendingUp, CarFront, Users, MapPin, Star, CheckCircle, ArrowRight, Phone, Search, ChevronDown, GraduationCap, Award, Map, Quote } from 'lucide-react';
+import { ShieldCheck, CalendarCheck, TrendingUp, CarFront, Users, MapPin, Star, CheckCircle, ArrowRight, Phone, GraduationCap, Award, Map, Quote } from 'lucide-react';
 import { useScrollReveal } from '../hooks/useInteractive';
 import './Home.css';
 
@@ -112,44 +111,9 @@ const Home = () => {
                   <img src="/newLogo.png" alt="Sanos Logo" />
                 </div>
                 <h3 className="card-title">FIND YOUR INSTRUCTOR</h3>
-                
-                <div className="form-group">
-                  <label>Suburb or postcode</label>
-                  <div className="input-with-icon">
-                    <Search size={18} className="input-icon" />
-                    <input type="text" placeholder="e.g. Mawson Lakes, 5095" />
-                  </div>
-                </div>
-                
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Transmission</label>
-                    <div className="select-wrapper">
-                      <select defaultValue="Automatic">
-                        <option value="Automatic">Automatic</option>
-                        <option value="Manual">Manual</option>
-                      </select>
-                      <ChevronDown size={16} className="select-icon" />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label>Lesson type</label>
-                    <div className="select-wrapper">
-                      <select defaultValue="1 Hour">
-                        <option value="1 Hour">1 Hour</option>
-                        <option value="2 Hours">2 Hours</option>
-                      </select>
-                      <ChevronDown size={16} className="select-icon" />
-                    </div>
-                  </div>
-                </div>
-                
-                <button className="btn-search-instructors">
-                  <Search size={18} /> Search Instructors
-                </button>
-                <button className="btn-find-near-me">
-                  <MapPin size={18} color="#E02424" /> Find Instructors Near Me
-                </button>
+                <Link to="/find-instructor" className="btn-search-instructors">
+                  Find Your Instructor <ArrowRight size={18} />
+                </Link>
               </div>
             </div>
           </div>

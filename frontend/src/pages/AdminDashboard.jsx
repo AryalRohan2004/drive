@@ -26,6 +26,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Children, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
   auditLogsApi,
@@ -376,8 +377,6 @@ const UsersSection = ({ users, setUsers }) => {
           <option value="pending">Pending</option>
           <option value="active">Active</option>
           <option value="rejected">Rejected</option>
-          <option value="suspended">Suspended</option>
-          <option value="inactive">Inactive</option>
         </select>
       </div>
 
@@ -396,19 +395,15 @@ const UsersSection = ({ users, setUsers }) => {
         <tbody>
           {filtered.map((user) => (
             <tr key={user.id}>
-              <td><strong>{getName(user)}</strong></td>
+              <td>
+                <Link to={`/admin/users/${user.id}`} className="text-link" style={{ fontWeight: 700 }}>
+                  {getName(user)}
+                </Link>
+              </td>
               <td className="muted-cell">{user.email}</td>
               <td>{user.phone || 'Not set'}</td>
               <td>
-                {editingId === user.id ? (
-                  <select value={editData.role || user.role} onChange={(event) => setEditData({ ...editData, role: event.target.value })}>
-                    <option value="learner">Learner</option>
-                    <option value="instructor">Instructor</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                ) : (
-                  <RolePill role={user.role} />
-                )}
+                <RolePill role={user.role} />
               </td>
               <td>
                 {editingId === user.id ? (
@@ -416,8 +411,6 @@ const UsersSection = ({ users, setUsers }) => {
                     <option value="pending">Pending</option>
                     <option value="active">Active</option>
                     <option value="rejected">Rejected</option>
-                    <option value="suspended">Suspended</option>
-                    <option value="inactive">Inactive</option>
                   </select>
                 ) : (
                   <StatusPill status={user.status} />
@@ -432,12 +425,15 @@ const UsersSection = ({ users, setUsers }) => {
                   </ActionGroup>
                 ) : (
                   <ActionGroup>
+                    <Link to={`/admin/users/${user.id}`} className="admin-action primary" style={{ textDecoration: 'none' }}>
+                      View
+                    </Link>
                     <IconButton
                       label="Edit"
                       tone="primary"
                       onClick={() => {
                         setEditingId(user.id);
-                        setEditData({ role: user.role, status: user.status });
+                        setEditData({ status: user.status });
                       }}
                     >
                       <Edit3 size={15} />
@@ -473,9 +469,8 @@ const ApprovalsList = ({ users, setUsers, compact = false }) => {
 
   const reject = async (id) => {
     try {
-      const data = await usersApi.rejectInstructor(id);
-      setUsers?.((prev) => prev.map((user) => (user.id === id ? data.user || { ...user, status: 'rejected' } : user)));
-      toast.success('Instructor rejected');
+      setUsers?.((prev) => prev.filter((user) => user.id !== id));
+      toast.success('Instructor removed');
     } catch (err) {
       toast.error(err.message || 'Failed to reject instructor');
     }
@@ -496,12 +491,19 @@ const ApprovalsList = ({ users, setUsers, compact = false }) => {
       {users.map((user) => (
         <article className="admin-approval-card" key={user.id}>
           <div>
-            <strong>{getName(user)}</strong>
+            <strong>
+              <Link to={`/admin/users/${user.id}`} className="text-link">
+                {getName(user)}
+              </Link>
+            </strong>
             <span>{user.email}</span>
             <small>{user.phone || 'No phone'} • Registered {formatDate(user.createdAt || user.created_at)}</small>
           </div>
           {!compact && (
             <ActionGroup>
+              <Link to={`/admin/users/${user.id}`} className="admin-action primary" style={{ textDecoration: 'none' }}>
+                Details
+              </Link>
               <button className="admin-action success" onClick={() => approve(user.id)} type="button"><CheckCircle2 size={16} /> Approve</button>
               <button className="admin-action danger" onClick={() => reject(user.id)} type="button"><XCircle size={16} /> Reject</button>
             </ActionGroup>

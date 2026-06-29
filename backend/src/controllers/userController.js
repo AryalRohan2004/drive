@@ -7,7 +7,7 @@ import { logAudit } from '../utils/auditLogger.js';
 const updateProfileSchema = z.object({
   fullName: z.string().min(2).optional(),
   role: z.enum(['learner', 'instructor', 'admin']).optional(),
-  status: z.enum(['pending', 'active', 'rejected', 'suspended', 'inactive']).optional(),
+  status: z.enum(['pending', 'active', 'rejected']).optional(),
   phone: z.string().optional().nullable(),
   dateOfBirth: z.string().date().optional().nullable(),
   address: z.string().optional().nullable(),
@@ -76,6 +76,43 @@ const mapUser = (row) => ({
   baseLongitude: row.base_longitude,
   serviceRadiusKm: row.service_radius_km,
   maxTravelDistanceKm: row.max_travel_distance_km,
+  instructorProfile: row.instructor_profile
+    ? row.instructor_profile
+    : row.instructor_profile_id || row.languages_spoken || row.accreditation_number
+      ? {
+          id: row.instructor_profile_id,
+          userId: row.user_id,
+          languagesSpoken: row.languages_spoken,
+          profilePhotoUrl: row.profile_photo_url,
+          accreditationNumber: row.accreditation_number,
+          licenseExpiry: row.license_expiry,
+          hasWwcc: row.has_wwcc,
+          hasPoliceClearance: row.has_police_clearance,
+          servicesOffered: row.services_offered,
+          daysAvailable: row.days_available,
+          timesAvailable: row.times_available,
+          pickupLocations: row.pickup_locations,
+          vehicleMakeModel: row.vehicle_make_model,
+          vehicleTransmission: row.vehicle_transmission,
+          hasDualControl: row.has_dual_control,
+          vehiclePhotoUrl: row.vehicle_photo_url,
+          price1Hr: row.price_1hr,
+          price2Hr: row.price_2hr,
+          priceTestPackage: row.price_test_package,
+          specialPackages: row.special_packages,
+          bankDetails: row.bank_details,
+          abn: row.abn,
+          yearsExperience: row.years_experience,
+          studentsTaught: row.students_taught,
+          socialLinks: row.social_links,
+          testimonialsText: row.testimonials_text,
+          agreedCommission: row.agreed_commission,
+          agreedTerms: row.agreed_terms,
+          agreedCancellation: row.agreed_cancellation,
+          createdAt: row.instructor_created_at,
+          updatedAt: row.instructor_updated_at,
+        }
+      : null,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -189,7 +226,22 @@ export const listUsers = asyncHandler(async (req, res) => {
 
 export const getUserById = asyncHandler(async (req, res) => {
   const result = await query(
-    'SELECT id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, learning_status, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at FROM users WHERE id = $1',
+    `SELECT
+       u.id, u.full_name, u.email, u.phone, u.role, u.status, u.date_of_birth, u.address, u.suburb, u.postcode,
+       u.license_type, u.transmission_preference, u.logbook_hours, u.progress_percent, u.learning_status, u.license_number,
+       u.service_areas, u.bio, u.availability, u.preferred_vehicle_type, u.pickup_address, u.pickup_suburb, u.pickup_latitude,
+       u.pickup_longitude, u.emergency_contact_name, u.emergency_contact_phone, u.preferred_lesson_times, u.special_requirements,
+       u.documentation_status, u.vehicle_types_supported, u.base_address, u.base_latitude, u.base_longitude,
+       u.service_radius_km, u.max_travel_distance_km, u.created_at, u.updated_at,
+       ip.id AS instructor_profile_id, ip.user_id, ip.languages_spoken, ip.profile_photo_url, ip.accreditation_number,
+       ip.license_expiry, ip.has_wwcc, ip.has_police_clearance, ip.services_offered, ip.days_available, ip.times_available,
+       ip.pickup_locations, ip.vehicle_make_model, ip.vehicle_transmission, ip.has_dual_control, ip.vehicle_photo_url,
+       ip.price_1hr, ip.price_2hr, ip.price_test_package, ip.special_packages, ip.bank_details, ip.abn,
+       ip.years_experience, ip.students_taught, ip.social_links, ip.testimonials_text, ip.agreed_commission,
+       ip.agreed_terms, ip.agreed_cancellation, ip.created_at AS instructor_created_at, ip.updated_at AS instructor_updated_at
+     FROM users u
+     LEFT JOIN instructor_profiles ip ON ip.user_id = u.id
+     WHERE u.id = $1`,
     [req.params.id]
   );
 
@@ -199,13 +251,16 @@ export const getUserById = asyncHandler(async (req, res) => {
 
   await logAudit({
     actor: req.user,
-    action: 'user.updated',
+    action: 'user.viewed',
     entityType: 'user',
     entityId: result.rows[0].id,
     targetUserId: result.rows[0].id,
     targetUserRole: result.rows[0].role,
-    summary: `Admin updated ${result.rows[0].role} ${result.rows[0].full_name}`,
-    metadata: { changes: parsed.data },
+    summary: `${req.user.role} viewed ${result.rows[0].role} ${result.rows[0].full_name}`,
+    metadata: {
+      viewedRole: result.rows[0].role,
+      viewedEmail: result.rows[0].email,
+    },
   });
 
   res.json({ user: mapUser(result.rows[0]) });
@@ -254,7 +309,9 @@ export const updateUserById = asyncHandler(async (req, res) => {
   if (!parsed.success) {
     throw new AppError(parsed.error.issues[0]?.message || 'Invalid profile payload', 400);
   }
-  const { fields, values } = buildUpdateFragments(parsed.data);
+  const updateData = { ...parsed.data };
+  delete updateData.role;
+  const { fields, values } = buildUpdateFragments(updateData);
 
   if (!fields.length) {
     throw new AppError('No changes submitted', 400);
@@ -304,9 +361,7 @@ export const approveInstructor = asyncHandler(async (req, res) => {
 
 export const rejectInstructor = asyncHandler(async (req, res) => {
   const result = await query(
-    `UPDATE users
-     SET status = 'rejected',
-         updated_at = NOW()
+    `DELETE FROM users
      WHERE id = $1 AND role = 'instructor'
      RETURNING id, full_name, email, phone, role, status, date_of_birth, address, suburb, postcode, license_type, transmission_preference, logbook_hours, progress_percent, learning_status, license_number, service_areas, bio, availability, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude, pickup_longitude, emergency_contact_name, emergency_contact_phone, preferred_lesson_times, special_requirements, documentation_status, vehicle_types_supported, base_address, base_latitude, base_longitude, service_radius_km, max_travel_distance_km, created_at, updated_at`,
     [req.params.id]
@@ -323,9 +378,9 @@ export const rejectInstructor = asyncHandler(async (req, res) => {
     entityId: result.rows[0].id,
     targetUserId: result.rows[0].id,
     targetUserRole: 'instructor',
-    summary: `Admin rejected instructor ${result.rows[0].full_name}`,
+    summary: `Admin rejected and removed instructor application ${result.rows[0].full_name}`,
     metadata: { email: result.rows[0].email },
   });
 
-  res.json({ user: mapUser(result.rows[0]) });
+  res.json({ user: mapUser({ ...result.rows[0], status: 'rejected' }) });
 });

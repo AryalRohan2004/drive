@@ -1,15 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Calendar, Clock, Edit, CheckCircle, Search, Loader, AlertCircle } from 'lucide-react';
+import { Users, Calendar, Clock, CheckCircle, Search, Loader } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { dashboardApi } from '../services/api';
-import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import './Dashboard.css';
 
+const getStableProgress = (student) => {
+  const explicitProgress = Number(student.progressPercent);
+  if (Number.isFinite(explicitProgress)) {
+    return Math.max(0, Math.min(100, explicitProgress));
+  }
+
+  const source = student.id || student.email || student.full_name || student.fullName || student.name || '';
+  let hash = 0;
+  for (let i = 0; i < source.length; i += 1) {
+    hash = (hash * 31 + source.charCodeAt(i)) % 1000;
+  }
+
+  return 10 + (hash % 61);
+};
+
 const InstructorDashboard = () => {
   const [activeTab, setActiveTab] = useState('schedule');
-  const { user } = useAuth();
   const [dashData, setDashData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [completingId, setCompletingId] = useState(null);
@@ -238,26 +251,33 @@ const InstructorDashboard = () => {
                   ) : (
                     filteredStudents.map(student => (
                       <tr key={student.id}>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#e0f2fe', color: '#0369a1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                              {(student.full_name || student.name || student.fullName || 'S')[0].toUpperCase()}
-                            </div>
-                            <span style={{ fontWeight: '600' }}>{student.full_name || student.name || student.fullName}</span>
-                          </div>
-                        </td>
-                        <td>{student.package_name || student.packageName || 'Standard Lessons'}</td>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <div className="progress-bar-container" style={{ width: '120px', height: '8px' }}>
-                              <div className="progress-bar" style={{ width: `${student.progressPercent || Math.floor(Math.random() * 60) + 10}%`, background: (student.progressPercent || 0) >= 50 ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #3b82f6, #60a5fa)' }}></div>
-                            </div>
-                            <span className="text-sm font-bold text-muted">{student.progressPercent || Math.floor(Math.random() * 60) + 10}%</span>
-                          </div>
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <Link to={`/profile/${student.id}`} className="btn btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.875rem', borderRadius: '2rem' }}>View Profile</Link>
-                        </td>
+                        {(() => {
+                          const progress = getStableProgress(student);
+                          return (
+                            <>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#e0f2fe', color: '#0369a1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                                    {(student.full_name || student.name || student.fullName || 'S')[0].toUpperCase()}
+                                  </div>
+                                  <span style={{ fontWeight: '600' }}>{student.full_name || student.name || student.fullName}</span>
+                                </div>
+                              </td>
+                              <td>{student.package_name || student.packageName || 'Standard Lessons'}</td>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                  <div className="progress-bar-container" style={{ width: '120px', height: '8px' }}>
+                                    <div className="progress-bar" style={{ width: `${progress}%`, background: progress >= 50 ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #3b82f6, #60a5fa)' }}></div>
+                                  </div>
+                                  <span className="text-sm font-bold text-muted">{progress}%</span>
+                                </div>
+                              </td>
+                              <td style={{ textAlign: 'right' }}>
+                                <Link to={`/profile/${student.id}`} className="btn btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.875rem', borderRadius: '2rem' }}>View Profile</Link>
+                              </td>
+                            </>
+                          );
+                        })()}
                       </tr>
                     ))
                   )}

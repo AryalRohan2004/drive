@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
@@ -27,6 +27,7 @@ import Assignments from './pages/Assignments';
 import TransferRequests from './pages/TransferRequests';
 import Testimonials from './pages/Testimonials';
 import FAQ from './pages/FAQ';
+import AdminUserDetails from './pages/AdminUserDetails';
 
 // Placeholder components for routes not yet fully built
 const PlaceholderPage = ({ title }) => (
@@ -92,6 +93,7 @@ function App() {
 
           {/* Protected: Admin only */}
           <Route path="admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+          <Route path="admin/users/:id" element={<ProtectedRoute roles={['admin']}><AdminUserDetails /></ProtectedRoute>} />
 
           {/* 404 */}
           <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />

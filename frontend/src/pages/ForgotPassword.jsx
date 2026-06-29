@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { authApi } from '../services/api';
@@ -9,6 +9,7 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +20,12 @@ const ForgotPassword = () => {
       setSuccess(true);
       toast.success('Reset link sent!');
     } catch (err) {
-      toast.error(err.message || 'Failed to send reset link.');
+      const serviceUnavailable = [404, 405, 501].includes(err?.status) || !navigator.onLine;
+      const message = serviceUnavailable
+        ? 'Password reset is currently unavailable. Please try again later.'
+        : (err.message || 'Failed to send reset link.');
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -34,6 +40,13 @@ const ForgotPassword = () => {
             <h1 className="h2">Forgot Password</h1>
             <p className="text-muted">Enter your email and we'll send you a reset link.</p>
           </div>
+
+          {error && !success ? (
+            <div className="form-error" style={{ marginBottom: '1rem' }}>
+              <AlertCircle size={16} />
+              <span>{error}</span>
+            </div>
+          ) : null}
 
           {success ? (
             <div className="text-center" style={{ padding: '2rem 0' }}>

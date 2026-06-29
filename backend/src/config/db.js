@@ -105,6 +105,41 @@ const createTables = [
   );
   `,
   `
+  CREATE TABLE IF NOT EXISTS instructor_profiles (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    languages_spoken TEXT,
+    profile_photo_url TEXT,
+    accreditation_number TEXT,
+    license_expiry DATE,
+    has_wwcc BOOLEAN NOT NULL DEFAULT FALSE,
+    has_police_clearance BOOLEAN NOT NULL DEFAULT FALSE,
+    services_offered JSONB,
+    days_available TEXT,
+    times_available TEXT,
+    pickup_locations TEXT,
+    vehicle_make_model TEXT,
+    vehicle_transmission TEXT,
+    has_dual_control BOOLEAN NOT NULL DEFAULT FALSE,
+    vehicle_photo_url TEXT,
+    price_1hr NUMERIC(10,2),
+    price_2hr NUMERIC(10,2),
+    price_test_package NUMERIC(10,2),
+    special_packages TEXT,
+    bank_details TEXT,
+    abn TEXT,
+    years_experience INTEGER,
+    students_taught INTEGER,
+    social_links TEXT,
+    testimonials_text TEXT,
+    agreed_commission BOOLEAN NOT NULL DEFAULT FALSE,
+    agreed_terms BOOLEAN NOT NULL DEFAULT FALSE,
+    agreed_cancellation BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  `,
+  `
   CREATE TABLE IF NOT EXISTS lesson_packages (
     id TEXT PRIMARY KEY,
     code TEXT NOT NULL UNIQUE,
@@ -452,6 +487,8 @@ export async function initializeDatabase() {
   for (const statement of indexStatements) {
     await execute(statement);
   }
+
+  await execute(`DELETE FROM users WHERE role = 'instructor' AND status = 'rejected'`);
 
   const existingPackageCount = await query('SELECT COUNT(*)::int AS count FROM lesson_packages');
   if (existingPackageCount.rows[0].count === 0) {

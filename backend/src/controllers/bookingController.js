@@ -75,6 +75,41 @@ const parseTimeToMinutes = (value) => {
 
 const rangesOverlap = (startA, endA, startB, endB) => startA < endB && startB < endA;
 
+const addMinutesToTime = (timeValue, minutesToAdd) => {
+  if (!timeValue) return timeValue;
+
+  const text = String(timeValue).trim();
+  const amPmMatch = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
+  if (amPmMatch) {
+    let hour = Number(amPmMatch[1]);
+    const minute = Number(amPmMatch[2]);
+    const period = amPmMatch[3].toUpperCase();
+    if (period === 'PM' && hour !== 12) hour += 12;
+    if (period === 'AM' && hour === 12) hour = 0;
+
+    const totalMinutes = hour * 60 + minute + Number(minutesToAdd || 0);
+    const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+    const nextHour = Math.floor(normalized / 60);
+    const nextMinute = normalized % 60;
+    const suffix = nextHour >= 12 ? 'PM' : 'AM';
+    const displayHour = nextHour % 12 || 12;
+    return `${String(displayHour).padStart(2, '0')}:${String(nextMinute).padStart(2, '0')} ${suffix}`;
+  }
+
+  const twentyFourHourMatch = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (twentyFourHourMatch) {
+    const hour = Number(twentyFourHourMatch[1]);
+    const minute = Number(twentyFourHourMatch[2]);
+    const totalMinutes = hour * 60 + minute + Number(minutesToAdd || 0);
+    const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+    const nextHour = Math.floor(normalized / 60);
+    const nextMinute = normalized % 60;
+    return `${String(nextHour).padStart(2, '0')}:${String(nextMinute).padStart(2, '0')}:00`;
+  }
+
+  return timeValue;
+};
+
 const assertLearnerRequirements = async (studentId, selectedVehicleType) => {
   if (!selectedVehicleType) return;
 
@@ -101,6 +136,26 @@ const assertLearnerRequirements = async (studentId, selectedVehicleType) => {
   if (verified.rowCount === 0) {
     throw new AppError(`Verified ${matched.name} document is required before booking this lesson.`, 403);
   }
+};
+
+const assertCanAccessBooking = async (booking, user, action = 'access') => {
+  if (user.role === 'admin') return;
+
+  if (user.role === 'instructor') {
+    if (user.status !== 'active') {
+      throw new AppError(`Only an active instructor can ${action} this booking`, 403);
+    }
+
+    if (booking.instructor_id !== user.id) {
+      throw new AppError(`You do not have permission to ${action} this booking`, 403);
+    }
+
+    return;
+  }
+
+  if (booking.user_id === user.id) return;
+
+  throw new AppError(`You do not have access to ${action} this booking`, 403);
 };
 
 const assertNoInstructorConflict = async ({ instructorId, lessonDate, lessonTime, durationMinutes, excludeBookingId = null }) => {
@@ -201,7 +256,7 @@ const ensureScheduledSession = async (client, booking) => {
       booking.instructor_id,
       booking.lesson_date,
       booking.lesson_time,
-      booking.lesson_time,
+      addMinutesToTime(booking.lesson_time, Number(booking.duration_minutes || 60)),
       booking.pickup_address || booking.pickup_suburb || null,
       booking.booking_type,
       booking.vehicle_type || null,
@@ -289,9 +344,7 @@ export const getBookingById = asyncHandler(async (req, res) => {
   }
 
   const booking = result.rows[0];
-  if (req.user.role !== 'admin' && req.user.role !== 'instructor' && booking.user_id !== req.user.id) {
-    throw new AppError('You do not have access to this booking', 403);
-  }
+  await assertCanAccessBooking(booking, req.user, 'view');
 
   res.json({ booking: mapBooking(booking) });
 });
@@ -466,6 +519,7 @@ export const updateBooking = asyncHandler(async (req, res) => {
   }
 
   const current = existing.rows[0];
+  await assertCanAccessBooking(current, req.user, 'update');
   const nextInstructorId = allowed.data.instructorId ?? current.instructor_id;
   const nextLessonDate = allowed.data.lessonDate ?? current.lesson_date;
   const nextLessonTime = allowed.data.lessonTime ?? current.lesson_time;
@@ -520,6 +574,7 @@ export const confirmBooking = asyncHandler(async (req, res) => {
   }
 
   const bookingToConfirm = existing.rows[0];
+  await assertCanAccessBooking(bookingToConfirm, req.user, 'confirm');
   if (bookingToConfirm.instructor_id) {
     await assertNoInstructorConflict({
       instructorId: bookingToConfirm.instructor_id,
@@ -576,9 +631,7 @@ export const cancelBooking = asyncHandler(async (req, res) => {
   }
 
   const booking = existing.rows[0];
-  if (req.user.role !== 'admin' && req.user.role !== 'instructor' && booking.user_id !== req.user.id) {
-    throw new AppError('You do not have access to cancel this booking', 403);
-  }
+  await assertCanAccessBooking(booking, req.user, 'cancel');
 
   const result = await query(
     `UPDATE bookings SET status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING *`,

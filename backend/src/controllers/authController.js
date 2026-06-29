@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { query } from '../config/db.js';
+import { query, withTransaction } from '../config/db.js';
 import { env } from '../config/env.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -205,11 +205,8 @@ export const register = asyncHandler(async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password, 12);
   const userId = crypto.randomUUID();
-  
-  // Begin transaction to insert both User and Profile
-  await query('BEGIN');
-  try {
-    const result = await query(
+  const result = await withTransaction(async (client) => {
+    const insertedUser = await client.query(
       `INSERT INTO users (
         id, full_name, email, phone, password_hash, role, status,
         transmission_preference, preferred_vehicle_type, pickup_address, pickup_suburb, pickup_latitude,
@@ -248,12 +245,12 @@ export const register = asyncHandler(async (req, res) => {
         baseLongitude ?? null,
         serviceRadiusKm ?? 25,
         role === 'instructor' ? 'pending' : 'active',
-    ]
+      ]
     );
 
     if (role === 'instructor') {
       const profileId = crypto.randomUUID();
-      await query(
+      await client.query(
         `INSERT INTO instructor_profiles (
           id, user_id, languages_spoken, profile_photo_url, accreditation_number, license_expiry,
           has_wwcc, has_police_clearance, services_offered, days_available, times_available,
@@ -272,31 +269,28 @@ export const register = asyncHandler(async (req, res) => {
           pickupLocations || null, vehicleMakeModel || null, vehicleTransmission || null, hasDualControl || false,
           vehiclePhotoUrl || null, price1Hr || null, price2Hr || null, priceTestPackage || null, specialPackages || null,
           bankDetails || null, abn || null, yearsExperience || null, studentsTaught || null, socialLinks || null,
-          testimonialsText || testimonials || null, agreeCommission ?? false, agreeTerms ?? false, agreeCancellation ?? false
+          testimonialsText || testimonials || null, agreeCommission ?? false, agreeTerms ?? false, agreeCancellation ?? false,
         ]
       );
     }
 
-    await query('COMMIT');
+    return insertedUser;
+  });
 
-    const user = mapUser(result.rows[0]);
-    await logAudit({
-      actor: user,
-      action: `${role}.registered`,
-      entityType: 'user',
-      entityId: user.id,
-      targetUserId: user.id,
-      targetUserRole: role,
-      summary: `${role} registered`,
-      metadata: { status: user.status, email: user.email },
-    });
-    const token = signToken(user.id, user.role);
+  const user = mapUser(result.rows[0]);
+  await logAudit({
+    actor: user,
+    action: `${role}.registered`,
+    entityType: 'user',
+    entityId: user.id,
+    targetUserId: user.id,
+    targetUserRole: role,
+    summary: `${role} registered`,
+    metadata: { status: user.status, email: user.email },
+  });
+  const token = signToken(user.id, user.role);
 
-    res.status(201).json({ user, accessToken: token });
-  } catch (err) {
-    await query('ROLLBACK');
-    throw err;
-  }
+  res.status(201).json({ user, accessToken: token });
 });
 
 export const login = asyncHandler(async (req, res) => {

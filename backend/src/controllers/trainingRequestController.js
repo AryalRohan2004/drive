@@ -39,6 +39,41 @@ const parseTimeToMinutes = (value) => {
 
 const rangesOverlap = (startA, endA, startB, endB) => startA < endB && startB < endA;
 
+const addMinutesToTime = (timeValue, minutesToAdd) => {
+  if (!timeValue) return timeValue;
+
+  const text = String(timeValue).trim();
+  const amPmMatch = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
+  if (amPmMatch) {
+    let hour = Number(amPmMatch[1]);
+    const minute = Number(amPmMatch[2]);
+    const period = amPmMatch[3].toUpperCase();
+    if (period === 'PM' && hour !== 12) hour += 12;
+    if (period === 'AM' && hour === 12) hour = 0;
+
+    const totalMinutes = hour * 60 + minute + Number(minutesToAdd || 0);
+    const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+    const nextHour = Math.floor(normalized / 60);
+    const nextMinute = normalized % 60;
+    const suffix = nextHour >= 12 ? 'PM' : 'AM';
+    const displayHour = nextHour % 12 || 12;
+    return `${String(displayHour).padStart(2, '0')}:${String(nextMinute).padStart(2, '0')} ${suffix}`;
+  }
+
+  const twentyFourHourMatch = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (twentyFourHourMatch) {
+    const hour = Number(twentyFourHourMatch[1]);
+    const minute = Number(twentyFourHourMatch[2]);
+    const totalMinutes = hour * 60 + minute + Number(minutesToAdd || 0);
+    const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+    const nextHour = Math.floor(normalized / 60);
+    const nextMinute = normalized % 60;
+    return `${String(nextHour).padStart(2, '0')}:${String(nextMinute).padStart(2, '0')}:00`;
+  }
+
+  return timeValue;
+};
+
 const assertInstructorSessionAvailable = async (client, instructorId, date, time) => {
   if (!date || !time) return;
 
@@ -211,7 +246,7 @@ export const acceptTrainingRequest = asyncHandler(async (req, res) => {
           row.instructor_id,
           row.preferred_date,
           row.preferred_time,
-          row.preferred_time,
+          addMinutesToTime(row.preferred_time, 60),
           'training-request',
           row.vehicle_type,
           row.message || null,
