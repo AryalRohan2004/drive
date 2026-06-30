@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { env } from './env.js';
@@ -441,6 +442,31 @@ const vehicleTypeSeed = [
   { code: 'overseas-conversion', name: 'Overseas Conversion', description: 'Overseas licence conversion training', requiresDocumentVerification: true },
 ];
 
+const instructorSeed = {
+  id: 'seed-instructor-1',
+  fullName: 'Test Instructor',
+  email: 'test-instructor@sanosdriving.com.au',
+  phone: '0412 000 111',
+  password: 'Test1234',
+  suburb: 'Adelaide',
+  bio: 'Experienced driving instructor for learner lessons and test preparation.',
+  serviceAreas: ['Adelaide', 'Mawson Lakes', 'Glenelg'],
+  vehicleTypesSupported: ['Automatic Car', 'Manual Car'],
+  baseAddress: 'Adelaide SA',
+  baseLatitude: -34.9285,
+  baseLongitude: 138.6007,
+  serviceRadiusKm: 25,
+  maxTravelDistanceKm: 25,
+  languagesSpoken: 'English',
+  daysAvailable: 'Mon-Fri',
+  timesAvailable: '8am-5pm',
+  vehicleMakeModel: 'Toyota Corolla',
+  vehicleTransmission: 'Automatic',
+  hasDualControl: true,
+  yearsExperience: 8,
+  studentsTaught: 250,
+};
+
 export async function initializeDatabase() {
   for (const statement of createTables) {
     await execute(statement);
@@ -537,6 +563,68 @@ export async function initializeDatabase() {
         [crypto.randomUUID(), vehicleType.code, vehicleType.name, vehicleType.description, vehicleType.requiresDocumentVerification]
       );
     }
+  }
+
+  const existingInstructor = await query('SELECT id FROM users WHERE email = $1 LIMIT 1', [instructorSeed.email]);
+  if (existingInstructor.rowCount === 0) {
+    const passwordHash = await bcrypt.hash(instructorSeed.password, 12);
+    await execute(
+      `INSERT INTO users (
+        id, full_name, email, phone, password_hash, role, status, suburb, bio,
+        service_areas, vehicle_types_supported, preferred_lesson_times, availability, base_address, base_latitude, base_longitude,
+        service_radius_km, max_travel_distance_km, documentation_status, learning_status
+      )
+       VALUES (
+        $1, $2, $3, $4, $5, 'instructor', 'pending', $6, $7,
+        $8::text[], $9::text[], $10::jsonb, $11::jsonb, $12, $13, $14,
+        $15, $16, 'pending', 'not_started'
+      )
+      ON CONFLICT (id) DO NOTHING`,
+      [
+        instructorSeed.id,
+        instructorSeed.fullName,
+        instructorSeed.email,
+        instructorSeed.phone,
+        passwordHash,
+        instructorSeed.suburb,
+        instructorSeed.bio,
+        instructorSeed.serviceAreas,
+        instructorSeed.vehicleTypesSupported,
+        JSON.stringify([]),
+        JSON.stringify([]),
+        instructorSeed.baseAddress,
+        instructorSeed.baseLatitude,
+        instructorSeed.baseLongitude,
+        instructorSeed.serviceRadiusKm,
+        instructorSeed.maxTravelDistanceKm,
+      ]
+    );
+
+    await execute(
+      `INSERT INTO instructor_profiles (
+        id, user_id, languages_spoken, days_available, times_available,
+        vehicle_make_model, vehicle_transmission, has_dual_control,
+        years_experience, students_taught, agreed_commission, agreed_terms, agreed_cancellation
+      )
+       VALUES (
+        $1, $2, $3, $4, $5,
+        $6, $7, $8,
+        $9, $10, TRUE, TRUE, TRUE
+      )
+      ON CONFLICT (user_id) DO NOTHING`,
+      [
+        crypto.randomUUID(),
+        instructorSeed.id,
+        instructorSeed.languagesSpoken,
+        instructorSeed.daysAvailable,
+        instructorSeed.timesAvailable,
+        instructorSeed.vehicleMakeModel,
+        instructorSeed.vehicleTransmission,
+        instructorSeed.hasDualControl,
+        instructorSeed.yearsExperience,
+        instructorSeed.studentsTaught,
+      ]
+    );
   }
 }
 

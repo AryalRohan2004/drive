@@ -18,6 +18,9 @@ app.use(
     credentials: true,
   })
 );
+// Raw body parser for Stripe webhook signature verification (must come before express.json)
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
 

@@ -98,6 +98,11 @@ export const bookingsApi = {
   cancel: (id) => request(`/bookings/${id}/cancel`, { method: 'POST' }),
 };
 
+// ─── Payments (Stripe) ──────────────────────────────────
+export const paymentsApi = {
+  createCheckoutSession: (body) => request('/payments/create-checkout-session', { method: 'POST', body }),
+};
+
 // ─── Contact ────────────────────────────────────────────
 export const contactApi = {
   submit: (body) => request('/contact', { method: 'POST', body, auth: false }),
@@ -141,6 +146,7 @@ export const contentApi = {
 
 // ─── Instructors ────────────────────────────────────────
 export const instructorsApi = {
+  list: () => request('/instructors', { auth: false }),
   nearby: (params = '') => request(`/instructors/nearby${params ? `?${params}` : ''}`, { auth: false }),
 };
 

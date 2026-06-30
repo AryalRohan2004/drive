@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Calendar, Clock, CreditCard, CheckCircle, ChevronRight, ChevronLeft, AlertCircle, Loader, Car, User } from 'lucide-react';
-import { packagesApi, availabilityApi, bookingsApi, vehicleTypesApi, usersApi } from '../services/api';
+import { Calendar, Clock, CheckCircle, ChevronRight, ChevronLeft, Loader, Car, User, Lock } from 'lucide-react';
+import { packagesApi, availabilityApi, bookingsApi, vehicleTypesApi, instructorsApi, paymentsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import './Booking.css';
 
+
 const Booking = () => {
   const [step, setStep] = useState(1);
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isAuthenticated } = useAuth();
 
   const [packages, setPackages] = useState([]);
@@ -30,9 +31,10 @@ const Booking = () => {
     time: '',
     pickupAddress: '',
     notes: '',
+    createdBookingId: null,
   });
 
-  // Fetch packages & vehicle types on mount
+  // Fetch packages, vehicle types & active instructors on mount
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -40,13 +42,13 @@ const Booking = () => {
         const [pkgRes, vtRes, instRes] = await Promise.all([
           packagesApi.list().catch(() => ({ packages: [] })),
           vehicleTypesApi.list().catch(() => ({ vehicleTypes: [] })),
-          usersApi.list('role=INSTRUCTOR').catch(() => ({ users: [] })),
+          instructorsApi.list().catch(() => ({ instructors: [] })),
         ]);
         setPackages(pkgRes.packages || pkgRes || []);
         setVehicleTypes(vtRes.vehicleTypes || vtRes || []);
-        setInstructors(instRes.users || instRes.data || instRes || []);
+        setInstructors(instRes.instructors || []);
       } catch {
-        // Use fallback data if API is not running
+        // Fallback data if API is completely down
         setPackages([
           { id: '1', code: 'single', name: 'Single Lesson (1.5 Hour)', description: 'Standard practice session', price: 160 },
           { id: '2', code: 'bulk10', name: '10 Lesson Package', description: 'Save $300', price: 1050 },
@@ -56,11 +58,7 @@ const Booking = () => {
           { id: '1', code: 'auto', name: 'Automatic' },
           { id: '2', code: 'manual', name: 'Manual' },
         ]);
-        setInstructors([
-          { id: '1', name: 'John Doe', email: 'john@example.com' },
-          { id: '2', name: 'Jane Smith', email: 'jane@example.com' },
-          { id: '3', name: 'Mike Johnson', email: 'mike@example.com' },
-        ]);
+        setInstructors([]);
       } finally {
         setLoading(false);
       }
@@ -76,7 +74,8 @@ const Booking = () => {
         const res = await availabilityApi.get(`date=${bookingData.date}&vehicleType=${bookingData.vehicleType}&instructorId=${bookingData.instructorId}`);
         setTimeSlots(res.slots || res.availability || []);
       } catch {
-        setTimeSlots(['09:00 AM', '11:00 AM', '02:00 PM', '04:00 PM']);
+        setTimeSlots([]);
+        toast.error('Unable to load live availability right now.');
       }
     };
     fetchSlots();
@@ -84,6 +83,24 @@ const Booking = () => {
 
   const handleNext = () => { setStep(step + 1); };
   const handlePrev = () => { setStep(step - 1); };
+
+  // Detect Stripe redirect back
+  useEffect(() => {
+    const payment = searchParams.get('payment');
+    const bookingId = searchParams.get('bookingId');
+    if (payment === 'success' && bookingId) {
+      window.setTimeout(() => {
+        setBookingData(prev => ({ ...prev, createdBookingId: bookingId }));
+        setStep(6);
+      }, 0);
+    } else if (payment === 'cancelled') {
+      toast('Payment cancelled. Your booking is saved — try again when ready.', { icon: '⚠️' });
+      window.setTimeout(() => setStep(5), 0);
+      // Clean up URL params
+      navigate('/book', { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Scroll to top when step changes
   useEffect(() => {
@@ -97,29 +114,45 @@ const Booking = () => {
       navigate('/login', { state: { from: { pathname: '/book' } } });
       return;
     }
-    
+
     setSubmitting(true);
 
     try {
-      await bookingsApi.create({
-        packageId: bookingData.packageId || undefined,
-        vehicleType: bookingData.vehicleType,
-        instructorId: bookingData.instructorId || undefined,
-        preferredDate: bookingData.date,
-        preferredTime: bookingData.time,
-        pickupAddress: bookingData.pickupAddress || undefined,
-        notes: bookingData.notes || undefined,
-      });
-      toast.success('Booking confirmed successfully!');
-      setStep(6);
+      // Step 1: Create the booking (status=pending, payment_status=unpaid)
+      let booking;
+      if (bookingData.createdBookingId) {
+        // Already created (e.g. returned from cancelled payment)
+        booking = { id: bookingData.createdBookingId };
+      } else {
+        const res = await bookingsApi.create({
+          bookingType: 'learner',
+          vehicleType: bookingData.vehicleType,
+          packageId: bookingData.packageId,
+          instructorId: bookingData.instructorId !== 'any' ? bookingData.instructorId : undefined,
+          lessonDate: bookingData.date,
+          lessonTime: bookingData.time,
+          pickupAddress: bookingData.pickupAddress || undefined,
+          notes: bookingData.notes || undefined,
+        });
+        booking = res.booking;
+        setBookingData(prev => ({ ...prev, createdBookingId: booking.id }));
+      }
+
+      // Step 2: Create Stripe Checkout Session → redirect
+      const { url } = await paymentsApi.createCheckoutSession({ bookingId: booking.id });
+
+      if (!url) {
+        throw new Error('No payment URL returned from server');
+      }
+
+      // Redirect to Stripe-hosted checkout
+      window.location.href = url;
+
     } catch (err) {
-      toast.error(err.message || 'Failed to create booking. Please try again.');
-    } finally {
+      toast.error(err.message || 'Failed to initiate payment. Please try again.');
       setSubmitting(false);
     }
   };
-
-  const selectedPackage = packages.find(p => p.id === bookingData.packageId || p.code === bookingData.packageId);
 
   if (loading) {
     return (
@@ -217,10 +250,16 @@ const Booking = () => {
                   <div
                     key={instructor.id}
                     className={`selection-card ${bookingData.instructorId === instructor.id ? 'selected' : ''}`}
-                    onClick={() => setBookingData({ ...bookingData, instructorId: instructor.id, instructorName: instructor.name || `${instructor.firstName} ${instructor.lastName}` })}
+                    onClick={() => setBookingData({
+                      ...bookingData,
+                      instructorId: instructor.id,
+                      instructorName: instructor.name || `${instructor.firstName} ${instructor.lastName}`.trim() || 'Nearest Instructor',
+                    })}
                   >
                     <User size={28} style={{ marginBottom: '0.5rem' }} />
-                    <h3 className="h4">{instructor.name || `${instructor.firstName || ''} ${instructor.lastName || ''}`.trim() || 'Instructor'}</h3>
+                    <h3 className="h4">{instructor.name || `${instructor.firstName || ''} ${instructor.lastName || ''}`.trim() || 'Nearest Instructor'}</h3>
+                    <p className="text-muted text-sm" style={{ marginBottom: 0 }}>{instructor.subtitle || 'Nearest available instructor'}</p>
+                    {instructor.distance && <p className="text-muted text-sm" style={{ marginBottom: 0 }}>{instructor.distance}</p>}
                     {instructor.email && <p className="text-muted text-sm">{instructor.email}</p>}
                   </div>
                 )) : (
@@ -262,20 +301,27 @@ const Booking = () => {
                 {bookingData.date && (
                   <div className="form-group">
                     <label><Clock size={18} style={{ marginRight: '8px', verticalAlign: 'text-bottom' }} />Available Times</label>
-                    <div className="time-slots">
-                      {(Array.isArray(timeSlots) && timeSlots.length > 0 ? timeSlots : ['09:00 AM', '11:00 AM', '02:00 PM', '04:00 PM']).map(time => {
-                        const label = typeof time === 'string' ? time : time.time || time.label;
-                        return (
-                          <div
-                            key={label}
-                            className={`time-slot ${bookingData.time === label ? 'selected' : ''}`}
-                            onClick={() => setBookingData({ ...bookingData, time: label })}
-                          >
-                            {label}
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {Array.isArray(timeSlots) && timeSlots.length > 0 ? (
+                      <div className="time-slots">
+                        {timeSlots.map(time => {
+                          const label = typeof time === 'string' ? time : time.time || time.label;
+                          return (
+                            <div
+                              key={label}
+                              className={`time-slot ${bookingData.time === label ? 'selected' : ''}`}
+                              onClick={() => setBookingData({ ...bookingData, time: label })}
+                            >
+                              {label}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="find-state-panel" style={{ marginTop: '0.75rem', padding: '1.25rem' }}>
+                        <Clock size={28} className="icon-blue" style={{ marginBottom: '0.5rem' }} />
+                        <p style={{ margin: 0 }}>No time slots available for this instructor on the selected date.</p>
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="form-group">
@@ -348,8 +394,12 @@ const Booking = () => {
 
                 <div className="wizard-actions">
                   <button type="button" className="btn btn-outline" onClick={handlePrev}><ChevronLeft size={20} /> Back</button>
-                  <button type="submit" className="btn btn-primary" disabled={submitting}>
-                    {submitting ? <><Loader size={18} className="spin-icon" /> Booking...</> : 'Confirm Booking'}
+                  <button type="submit" className="btn btn-primary" disabled={submitting} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {submitting ? (
+                      <><Loader size={18} className="spin-icon" /> Redirecting to payment...</>
+                    ) : (
+                      <><Lock size={16} /> Pay & Confirm Booking</>
+                    )}
                   </button>
                 </div>
               </form>
@@ -359,9 +409,21 @@ const Booking = () => {
           {/* Step 6: Success */}
           {step === 6 && (
             <div className="wizard-step fade-in text-center py-5">
-              <CheckCircle size={64} className="icon-success mx-auto mb-4" style={{ margin: '0 auto' }} />
-              <h2 className="h2 mb-3">Booking Confirmed!</h2>
-              <p className="text-muted mb-4">Your lesson has been successfully booked. We've sent a confirmation email to you.</p>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                <div style={{
+                  width: '80px', height: '80px', borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 8px 30px rgba(34,197,94,0.35)'
+                }}>
+                  <CheckCircle size={44} color="white" strokeWidth={2.5} />
+                </div>
+              </div>
+              <h2 className="h2 mb-3" style={{ color: '#15803d' }}>Payment Successful!</h2>
+              <p className="text-muted mb-4" style={{ maxWidth: '460px', margin: '0 auto 2rem', lineHeight: 1.6 }}>
+                Your booking is <strong>confirmed</strong> and payment has been received.
+                A confirmation email has been sent to you — see you at your lesson!
+              </p>
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                 <Link to="/" className="btn btn-outline">Back to Home</Link>
                 <Link to="/learner-dashboard" className="btn btn-primary">Go to Dashboard</Link>

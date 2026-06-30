@@ -25,4 +25,7 @@ export const env = {
   emailFrom: process.env.EMAIL_FROM || 'SANOS Driving School <no-reply@sanosdriving.com.au>',
   adminNotifyEmail: process.env.ADMIN_NOTIFY_EMAIL || 'info@sanosdriving.com.au',
   allowGuestBookings: String(process.env.ALLOW_GUEST_BOOKINGS || 'true') === 'true',
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+  stripeCurrency: process.env.STRIPE_CURRENCY || 'aud',
 };

@@ -111,6 +111,9 @@ const Home = () => {
                   <img src="/newLogo.png" alt="Sanos Logo" />
                 </div>
                 <h3 className="card-title">FIND YOUR INSTRUCTOR</h3>
+                <p className="text-muted" style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '0.925rem', lineHeight: '1.5', padding: '0 0.5rem' }}>
+                  Find the best driving instructors nearest to your location and start your journey today.
+                </p>
                 <Link to="/find-instructor" className="btn-search-instructors">
                   Find Your Instructor <ArrowRight size={18} />
                 </Link>

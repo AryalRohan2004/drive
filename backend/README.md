@@ -1,5 +1,7 @@
 # SANOS Driving School Backend Specification
 
+<!-- stripe listen --forward-to localhost:5000/api/payments/webhook -->
+
 This document describes the backend that should be built for the SANOS Driving School frontend.
 
 The current frontend is a React/Vite marketing site plus several mock flows for booking, auth, learner dashboards, and instructor dashboards. There is no real backend wired up yet, so this README defines the backend that the frontend should eventually connect to.

@@ -229,6 +229,75 @@
   font-weight: 600;
 }
 
+.hours-cta-card .card-body {
+  padding: 2rem 1.5rem;
+}
+
+.hours-cta-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.hours-cta-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: white;
+  margin-bottom: 0.25rem;
+}
+
+.hours-cta-card .stat-value {
+  color: #ffffff;
+}
+
+.hours-cta-card .stat-label {
+  color: rgba(255, 255, 255, 0.88);
+  opacity: 1;
+  letter-spacing: 0.16em;
+}
+
+.hours-cta-button {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: #ffffff !important;
+  color: #1e3a8a !important;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+}
+
+.hours-cta-button:hover {
+  background: #eff6ff !important;
+  color: #1e3a8a !important;
+  transform: translateY(-1px);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+.modal-card {
+  width: min(100%, 420px);
+  background: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  padding: 1.5rem;
+}
+
 /* Lists and Items */
 .history-list {
   display: flex;

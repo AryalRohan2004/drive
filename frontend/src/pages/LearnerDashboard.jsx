@@ -1,17 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, CheckCircle, TrendingUp, Award, ChevronRight, XCircle, Loader, AlertCircle } from 'lucide-react';
+import { Clock, CheckCircle, TrendingUp, Award, ChevronRight, XCircle, Loader, BookOpen } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { dashboardApi, bookingsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import './Dashboard.css';
 
+const formatDateSafe = (value, options = { year: 'numeric', month: 'short', day: 'numeric' }) => {
+  if (!value) return 'Invalid Date';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Invalid Date';
+  return date.toLocaleDateString('en-AU', options);
+};
+
 const LearnerDashboard = () => {
   const { user } = useAuth();
   const [dashData, setDashData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -28,7 +36,13 @@ const LearnerDashboard = () => {
   }, []);
 
   const handleCancel = async (bookingId) => {
-    if (!window.confirm('Are you sure you want to cancel this booking?')) return;
+    setCancelTarget(bookingId);
+  };
+
+  const confirmCancel = async () => {
+    if (!cancelTarget) return;
+    const bookingId = cancelTarget;
+    setCancelTarget(null);
     setCancellingId(bookingId);
     try {
       await bookingsApi.cancel(bookingId);
@@ -125,8 +139,12 @@ const LearnerDashboard = () => {
                   upcomingLessons.map(lesson => (
                     <div className="upcoming-lesson" key={lesson.id} style={{ marginBottom: '1rem' }}>
                       <div className="lesson-date">
-                        <span className="month">{new Date(lesson.sessionDate || lesson.date).toLocaleDateString('en-AU', { month: 'short' }).toUpperCase()}</span>
-                        <span className="day">{new Date(lesson.sessionDate || lesson.date).getDate()}</span>
+                        <span className="month">{formatDateSafe(lesson.sessionDate || lesson.date, { month: 'short' }).toUpperCase()}</span>
+                        <span className="day">{(() => {
+                          const value = lesson.sessionDate || lesson.date;
+                          const date = new Date(value);
+                          return Number.isNaN(date.getTime()) ? '--' : date.getDate();
+                        })()}</span>
                       </div>
                       <div className="lesson-details">
                         <h4 className="text-dark">{lesson.lessonType || lesson.type || 'Driving Lesson'}</h4>
@@ -225,7 +243,7 @@ const LearnerDashboard = () => {
                 ) : (
                   notes.map((note, idx) => (
                     <div className="note-item" key={idx}>
-                      <div className="note-date">{new Date(note.created_at || note.date || note.createdAt).toLocaleDateString('en-AU', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                      <div className="note-date">{formatDateSafe(note.created_at || note.date || note.createdAt, { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                       <p>"{note.note || note.text}"</p>
                     </div>
                   ))
@@ -235,11 +253,16 @@ const LearnerDashboard = () => {
           </div>
 
           <div className="dashboard-sidebar">
-            <div className="dashboard-card mb-4 bg-primary">
-              <div className="card-body text-center py-5">
+            <div className="dashboard-card mb-4 bg-primary hours-cta-card">
+              <div className="card-body text-center py-5 hours-cta-body">
+                <div className="hours-cta-icon">
+                  <BookOpen size={20} />
+                </div>
                 <div className="stat-value">{hoursLogged}</div>
                 <div className="stat-label mb-4">Hours Logged</div>
-                <Link to="/book" className="btn btn-white w-100" style={{ backgroundColor: 'white', color: '#1e3a8a', fontWeight: 'bold' }}>Book Next Lesson</Link>
+                <Link to="/book" className="btn btn-white w-100 hours-cta-button">
+                  Book Next Lesson
+                </Link>
               </div>
             </div>
 
@@ -258,7 +281,7 @@ const LearnerDashboard = () => {
                       <div className="history-item" key={idx}>
                         <div>
                           <div className="font-medium text-dark">{booking.type || booking.lessonType || 'Driving Lesson'}</div>
-                          <div className="text-sm text-muted mt-1">{new Date(booking.date || booking.sessionDate || booking.createdAt).toLocaleDateString('en-AU', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+                          <div className="text-sm text-muted mt-1">{formatDateSafe(booking.date || booking.sessionDate || booking.createdAt, { year: 'numeric', month: 'short', day: 'numeric' })}</div>
                         </div>
                         <span className={`badge-${booking.status === 'completed' ? 'success' : 'warning'}`}>{booking.status}</span>
                       </div>
@@ -277,6 +300,31 @@ const LearnerDashboard = () => {
           </div>
         </div>
       </div>
+
+      {cancelTarget && (
+        <div className="modal-backdrop" role="presentation" onClick={() => setCancelTarget(null)}>
+          <div
+            className="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-booking-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="cancel-booking-title" className="h4" style={{ marginTop: 0 }}>Cancel booking?</h3>
+            <p className="text-muted" style={{ marginBottom: '1.5rem' }}>
+              This will remove the booking from your upcoming lessons.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button className="btn btn-outline" onClick={() => setCancelTarget(null)}>
+                Keep Booking
+              </button>
+              <button className="btn btn-primary" onClick={confirmCancel} disabled={cancellingId === cancelTarget}>
+                {cancellingId === cancelTarget ? 'Cancelling...' : 'Cancel Booking'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

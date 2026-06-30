@@ -29,17 +29,11 @@ const FindInstructor = () => {
     return { latitude: Number(place.lat), longitude: Number(place.lon) };
   };
 
-  const searchNearby = async ({ latitude, longitude }) => {
-    const data = await matchingApi.nearby(`latitude=${latitude}&longitude=${longitude}`);
-    const matches = Array.isArray(data?.matches)
-      ? data.matches
-      : Array.isArray(data?.instructors)
-        ? data.instructors
-        : Array.isArray(data)
-          ? data
-          : [];
-    setResults(matches);
-    setSearchState(matches.length > 0 ? 'success' : 'empty');
+  const normalizeMatches = (data) => {
+    if (Array.isArray(data?.matches)) return data.matches;
+    if (Array.isArray(data?.instructors)) return data.instructors;
+    if (Array.isArray(data)) return data;
+    return [];
   };
 
   const handleSearch = async (e) => {
@@ -48,13 +42,15 @@ const FindInstructor = () => {
     setLoading(true);
     setSearchState('loading');
     try {
-      try {
-        const coords = await findCoordsFromLocation(location.trim());
-        await searchNearby(coords);
-      } catch {
-        setResults([]);
-        setSearchState('empty');
-      }
+      const coords = await findCoordsFromLocation(location.trim());
+      const data = await matchingApi.nearby(`latitude=${coords.latitude}&longitude=${coords.longitude}`);
+      const matches = normalizeMatches(data);
+      setResults(matches);
+      setSearchState(matches.length > 0 ? 'success' : 'empty');
+    } catch (err) {
+      setResults([]);
+      setSearchState('empty');
+      toast.error(err.message || 'No match found.');
     } finally {
       setLoading(false);
     }
@@ -71,19 +67,13 @@ const FindInstructor = () => {
       async (position) => {
         try {
           const data = await matchingApi.nearby(`latitude=${position.coords.latitude}&longitude=${position.coords.longitude}`);
-          const matches = Array.isArray(data?.matches)
-            ? data.matches
-            : Array.isArray(data?.instructors)
-              ? data.instructors
-              : Array.isArray(data)
-                ? data
-                : [];
+          const matches = normalizeMatches(data);
           setResults(matches);
           setSearchState(matches.length > 0 ? 'success' : 'empty');
         } catch (err) {
-          toast.error(err.message || 'Failed to find nearby instructors.');
           setResults([]);
           setSearchState('empty');
+          toast.error(err.message || 'Failed to find nearby instructors.');
         } finally {
           setLoading(false);
         }
