@@ -267,8 +267,8 @@ const Booking = () => {
                 )}
                 {/* Option to skip instructor selection (assign any) */}
                 <div
-                    className={`selection-card ${bookingData.instructorId === 'any' ? 'selected' : ''}`}
-                    onClick={() => setBookingData({ ...bookingData, instructorId: 'any', instructorName: 'Any Available Instructor' })}
+                  className={`selection-card ${bookingData.instructorId === 'any' ? 'selected' : ''}`}
+                  onClick={() => setBookingData({ ...bookingData, instructorId: 'any', instructorName: 'Any Available Instructor' })}
                 >
                   <User size={28} style={{ marginBottom: '0.5rem' }} />
                   <h3 className="h4">Any Instructor</h3>

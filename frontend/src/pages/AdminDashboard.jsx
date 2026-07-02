@@ -24,9 +24,10 @@ import {
   Users,
   X,
   XCircle,
+  ArrowLeft,
 } from 'lucide-react';
 import { Children, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
   auditLogsApi,
@@ -109,6 +110,7 @@ const initialContentForm = {
 };
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -243,7 +245,14 @@ const AdminDashboard = () => {
       <main className="admin-main">
         <header className="admin-topbar">
           <div>
-            <span className="admin-eyebrow">Admin panel</span>
+            <button 
+              onClick={() => navigate(-1)} 
+              className="btn btn-outline" 
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', padding: '0.25rem 0.5rem', fontSize: '0.875rem' }}
+            >
+              <ArrowLeft size={14} /> Back
+            </button>
+            <span className="admin-eyebrow" style={{ display: 'block' }}>Admin panel</span>
             <h1>{currentLabel}</h1>
             <p>Manage learners, instructors, bookings, approvals, platform content, and audit history.</p>
           </div>
