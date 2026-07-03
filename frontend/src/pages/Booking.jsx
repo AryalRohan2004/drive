@@ -169,15 +169,15 @@ const Booking = () => {
 
         {step < 6 && (
           <div className="wizard-progress">
-            <div className={`step-indicator ${step >= 1 ? 'active' : ''}`}>1. Vehicle</div>
+            <div className={`step-indicator ${step >= 1 ? 'active' : ''} ${step === 1 ? 'current' : ''}`}>1. Vehicle</div>
             <div className="step-line"></div>
-            <div className={`step-indicator ${step >= 2 ? 'active' : ''}`}>2. Package</div>
+            <div className={`step-indicator ${step >= 2 ? 'active' : ''} ${step === 2 ? 'current' : ''}`}>2. Package</div>
             <div className="step-line"></div>
-            <div className={`step-indicator ${step >= 3 ? 'active' : ''}`}>3. Instructor</div>
+            <div className={`step-indicator ${step >= 3 ? 'active' : ''} ${step === 3 ? 'current' : ''}`}>3. Instructor</div>
             <div className="step-line"></div>
-            <div className={`step-indicator ${step >= 4 ? 'active' : ''}`}>4. Schedule</div>
+            <div className={`step-indicator ${step >= 4 ? 'active' : ''} ${step === 4 ? 'current' : ''}`}>4. Schedule</div>
             <div className="step-line"></div>
-            <div className={`step-indicator ${step >= 5 ? 'active' : ''}`}>5. Review</div>
+            <div className={`step-indicator ${step >= 5 ? 'active' : ''} ${step === 5 ? 'current' : ''}`}>5. Review</div>
           </div>
         )}
 
