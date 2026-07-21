@@ -13,6 +13,7 @@ const mapBookingSummary = (row) => ({
   status: row.status,
   packageName: row.package_name,
   vehicleType: row.vehicle_type,
+  instructorName: row.instructor_name,
 });
 
 const runInTransaction = async (fn) => withTransaction((client) => fn(client));
@@ -41,19 +42,21 @@ export const learnerDashboard = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   const upcoming = await query(
-    `SELECT b.*, p.name AS package_name
+    `SELECT b.*, p.name AS package_name, u.full_name AS instructor_name
      FROM bookings b
      LEFT JOIN lesson_packages p ON p.id = b.package_id
+     LEFT JOIN users u ON u.id = b.instructor_id
      WHERE b.user_id = $1 AND b.status IN ('pending', 'confirmed')
      ORDER BY b.lesson_date ASC, b.lesson_time ASC
-     LIMIT 1`,
+     LIMIT 10`,
     [userId]
   );
 
   const history = await query(
-    `SELECT b.*, p.name AS package_name
+    `SELECT b.*, p.name AS package_name, u.full_name AS instructor_name
      FROM bookings b
      LEFT JOIN lesson_packages p ON p.id = b.package_id
+     LEFT JOIN users u ON u.id = b.instructor_id
      WHERE b.user_id = $1
      ORDER BY b.lesson_date DESC, b.lesson_time DESC
      LIMIT 20`,
@@ -106,6 +109,14 @@ export const learnerDashboard = asyncHandler(async (req, res) => {
     [userId]
   );
 
+  const latestPackages = await query(
+    `SELECT id, code, name, description, price, duration_minutes, category, is_active, included_items, created_at, updated_at
+     FROM lesson_packages
+     WHERE is_active = TRUE
+     ORDER BY created_at DESC
+     LIMIT 3`
+  );
+
   let cumulativeHours = 0;
   let activityData = [];
   if (activityDataResult.rowCount > 0) {
@@ -128,7 +139,7 @@ export const learnerDashboard = asyncHandler(async (req, res) => {
   }
 
   res.json({
-    upcomingLesson: upcoming.rows[0] ? mapBookingSummary(upcoming.rows[0]) : null,
+    upcomingLessons: upcoming.rows.map(mapBookingSummary),
     progressPercent: user.rows[0]?.progress_percent ?? 0,
     hoursLogged: user.rows[0]?.logbook_hours ?? 0,
     learningStatus: user.rows[0]?.learning_status ?? 'not_started',
@@ -145,6 +156,19 @@ export const learnerDashboard = asyncHandler(async (req, res) => {
     learnerDocuments: documents.rows,
     transferRequests: transfers.rows,
     activityData,
+    latestPackages: latestPackages.rows.map(row => ({
+      id: row.id,
+      code: row.code,
+      name: row.name,
+      description: row.description,
+      price: Number(row.price),
+      durationMinutes: row.duration_minutes,
+      category: row.category,
+      isActive: row.is_active,
+      includedItems: row.included_items || [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    })),
   });
 });
 

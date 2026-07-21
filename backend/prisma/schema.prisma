@@ -181,6 +181,8 @@ model Booking {
   instructorId  String?   @map("instructor_id")
   vehicleType   String?   @map("vehicle_type")
   vehicleCategory String? @map("vehicle_category")
+  stripeSessionId       String?  @map("stripe_session_id")
+  stripePaymentIntentId String?  @map("stripe_payment_intent_id")
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 

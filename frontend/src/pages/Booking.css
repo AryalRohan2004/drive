@@ -361,6 +361,15 @@
     padding: 2rem;
   }
   .wizard-progress {
-    flex-wrap: wrap;
+    padding: 1.5rem 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .wizard-progress .step-indicator:not(.current) {
+    display: none;
+  }
+  .wizard-progress .step-line {
+    display: none;
   }
 }

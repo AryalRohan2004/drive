@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Clock, CheckCircle, TrendingUp, Award, ChevronRight, XCircle, Loader, BookOpen } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Clock, CheckCircle, TrendingUp, Award, ChevronRight, XCircle, Loader, BookOpen, ArrowLeft, Package } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { dashboardApi, bookingsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,7 @@ const formatDateSafe = (value, options = { year: 'numeric', month: 'short', day:
 };
 
 const LearnerDashboard = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [dashData, setDashData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -74,6 +75,7 @@ const LearnerDashboard = () => {
   const notes = d.instructorNotes || d.notes || [];
   const hoursLogged = d.hoursLogged ?? d.stats?.hoursLogged ?? user?.logbookHours ?? 0;
   const recentBookings = d.lessonHistory || d.recentBookings || d.bookings || [];
+  const latestPackages = d.latestPackages || [];
 
   // Use backend activityData if provided
   let activityData = d.activityData || [];
@@ -107,16 +109,23 @@ const LearnerDashboard = () => {
         fullMark: 100
       }))
     : [
-        { subject: 'Steering', A: 80, fullMark: 100 },
-        { subject: 'Parking', A: 40, fullMark: 100 },
-        { subject: 'Signaling', A: 90, fullMark: 100 },
-        { subject: 'Reversing', A: 30, fullMark: 100 },
-        { subject: 'Traffic', A: 60, fullMark: 100 },
+        { subject: 'Steering', A: 0, fullMark: 100 },
+        { subject: 'Parking', A: 0, fullMark: 100 },
+        { subject: 'Signaling', A: 0, fullMark: 100 },
+        { subject: 'Reversing', A: 0, fullMark: 100 },
+        { subject: 'Traffic', A: 0, fullMark: 100 },
       ];
 
   return (
     <div className="dashboard-page section">
       <div className="container">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="btn btn-outline" 
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}
+        >
+          <ArrowLeft size={16} /> Back
+        </button>
         <div className="dashboard-header mb-4">
           <h1 className="h2">Welcome back, {user?.fullName?.split(' ')[0] || 'Learner'}!</h1>
           <p className="text-muted">Here is your interactive learning progress and upcoming schedule.</p>
@@ -139,17 +148,17 @@ const LearnerDashboard = () => {
                   upcomingLessons.map(lesson => (
                     <div className="upcoming-lesson" key={lesson.id} style={{ marginBottom: '1rem' }}>
                       <div className="lesson-date">
-                        <span className="month">{formatDateSafe(lesson.sessionDate || lesson.date, { month: 'short' }).toUpperCase()}</span>
+                        <span className="month">{formatDateSafe(lesson.sessionDate || lesson.date || lesson.lessonDate, { month: 'short' }).toUpperCase()}</span>
                         <span className="day">{(() => {
-                          const value = lesson.sessionDate || lesson.date;
+                          const value = lesson.sessionDate || lesson.date || lesson.lessonDate;
                           const date = new Date(value);
                           return Number.isNaN(date.getTime()) ? '--' : date.getDate();
                         })()}</span>
                       </div>
                       <div className="lesson-details">
-                        <h4 className="text-dark">{lesson.lessonType || lesson.type || 'Driving Lesson'}</h4>
+                        <h4 className="text-dark">{lesson.lessonType || lesson.type || lesson.packageName || 'Driving Lesson'}</h4>
                         <div className="lesson-meta text-sm">
-                          <span className="meta-item"><Clock size={16} /> {lesson.startTime} - {lesson.endTime}</span>
+                          <span className="meta-item"><Clock size={16} /> {lesson.startTime || lesson.lessonTime} {lesson.endTime ? `- ${lesson.endTime}` : ''}</span>
                           {lesson.instructorName && <span className="meta-item"><Award size={16} /> Instructor: {lesson.instructorName}</span>}
                         </div>
                       </div>
@@ -250,6 +259,46 @@ const LearnerDashboard = () => {
                 )}
               </div>
             </div>
+
+            {/* Latest Packages */}
+            <div className="dashboard-card mb-4">
+              <div className="card-header border-bottom" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 className="h4" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                  <Package size={20} className="text-primary" />
+                  Latest Packages
+                </h3>
+                <Link to="/packages" className="text-sm font-bold text-link" style={{ color: '#3b82f6', textDecoration: 'none' }}>View All</Link>
+              </div>
+              <div className="card-body">
+                {latestPackages.length === 0 ? (
+                  <p className="text-muted">No packages available at the moment.</p>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+                    {latestPackages.map((pkg) => (
+                      <div key={pkg.id} className="package-card" style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: '#f8fafc' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <h4 className="font-bold text-dark" style={{ margin: 0, fontSize: '1.1rem' }}>{pkg.name}</h4>
+                          <span className="badge-primary text-xs" style={{ background: '#e0e7ff', color: '#4338ca', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 'bold' }}>{pkg.category}</span>
+                        </div>
+                        <div className="text-2xl font-bold" style={{ color: '#0f172a' }}>
+                          ${pkg.price}
+                        </div>
+                        <p className="text-sm text-muted" style={{ margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {pkg.description || 'Learn to drive with our comprehensive package.'}
+                        </p>
+                        <ul className="text-sm text-muted" style={{ margin: 0, paddingLeft: '1.25rem', listStyleType: 'disc' }}>
+                          <li>{pkg.durationMinutes} minutes / lesson</li>
+                          {pkg.includedItems?.slice(0, 2).map((item, i) => <li key={i}>{item}</li>)}
+                        </ul>
+                        <Link to={`/book?package=${pkg.code}`} className="btn btn-primary" style={{ width: '100%', textAlign: 'center', marginTop: 'auto', display: 'inline-block' }}>
+                          Book Now
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="dashboard-sidebar">
@@ -280,8 +329,8 @@ const LearnerDashboard = () => {
                     recentBookings.slice(0, 5).map((booking, idx) => (
                       <div className="history-item" key={idx}>
                         <div>
-                          <div className="font-medium text-dark">{booking.type || booking.lessonType || 'Driving Lesson'}</div>
-                          <div className="text-sm text-muted mt-1">{formatDateSafe(booking.date || booking.sessionDate || booking.createdAt, { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+                          <div className="font-medium text-dark">{booking.type || booking.lessonType || booking.packageName || 'Driving Lesson'}</div>
+                          <div className="text-sm text-muted mt-1">{formatDateSafe(booking.date || booking.sessionDate || booking.lessonDate || booking.createdAt, { year: 'numeric', month: 'short', day: 'numeric' })}</div>
                         </div>
                         <span className={`badge-${booking.status === 'completed' ? 'success' : 'warning'}`}>{booking.status}</span>
                       </div>

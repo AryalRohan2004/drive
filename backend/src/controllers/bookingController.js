@@ -625,13 +625,25 @@ export const confirmBooking = asyncHandler(async (req, res) => {
 });
 
 export const cancelBooking = asyncHandler(async (req, res) => {
-  const existing = await query('SELECT id, user_id FROM bookings WHERE id = $1', [req.params.id]);
+  const existing = await query(`
+    SELECT id, user_id, 
+           EXTRACT(EPOCH FROM ((lesson_date + lesson_time) - NOW())) / 3600 AS hours_until_lesson
+    FROM bookings 
+    WHERE id = $1
+  `, [req.params.id]);
+  
   if (existing.rowCount === 0) {
     throw new AppError('Booking not found', 404);
   }
 
   const booking = existing.rows[0];
   await assertCanAccessBooking(booking, req.user, 'cancel');
+
+  if (req.user.role === 'learner' && booking.hours_until_lesson !== null) {
+    if (booking.hours_until_lesson < 24) {
+      throw new AppError('You can only cancel a booking up to 24 hours before the lesson starts', 400);
+    }
+  }
 
   const result = await query(
     `UPDATE bookings SET status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING *`,

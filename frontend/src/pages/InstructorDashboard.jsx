@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Users, Calendar, Clock, CheckCircle, Search, Loader } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Users, Calendar, Clock, CheckCircle, Search, Loader, ArrowLeft } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { dashboardApi } from '../services/api';
 import { toast } from 'react-hot-toast';
@@ -22,6 +22,7 @@ const getStableProgress = (student) => {
 };
 
 const InstructorDashboard = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('schedule');
   const [dashData, setDashData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -91,6 +92,13 @@ const InstructorDashboard = () => {
   return (
     <div className="dashboard-page section">
       <div className="container">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="btn btn-outline" 
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}
+        >
+          <ArrowLeft size={16} /> Back
+        </button>
         <div className="dashboard-header mb-4">
           <h1 className="h2">Instructor Dashboard</h1>
           <p className="text-muted">Manage your schedule, analyze trends, and monitor student progress.</p>

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { User, Save, Loader, AlertCircle, CheckCircle, MapPin, Phone, Mail, Car, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { User, Save, Loader, AlertCircle, CheckCircle, MapPin, Phone, Mail, Car, Shield, ArrowLeft } from 'lucide-react';
 import { usersApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import './Profile.css';
 
 const Profile = () => {
+  const navigate = useNavigate();
   const { user, refreshUser, role } = useAuth();
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(true);
@@ -74,6 +76,13 @@ const Profile = () => {
   return (
     <div className="profile-page bg-light section">
       <div className="container" style={{ maxWidth: '800px' }}>
+        <button 
+          onClick={() => navigate(-1)} 
+          className="btn btn-outline" 
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}
+        >
+          <ArrowLeft size={16} /> Back
+        </button>
         <div className="profile-header">
           <div className="profile-avatar">
             <User size={40} />
