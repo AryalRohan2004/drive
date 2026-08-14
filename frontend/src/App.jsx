@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './layouts/Layout';
 import Home from './pages/Home';
@@ -49,57 +50,59 @@ function ScrollToTop() {
 
 function App() {
   return (
-    <AuthProvider>
-      <Toaster position="top-center" />
-      <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          {/* Public pages */}
-          <Route index element={<Home />} />
-          <Route path="pricing" element={<Pricing />} />
-          <Route path="packages" element={<Packages />} />
-          <Route path="overseas" element={<Overseas />} />
-          <Route path="hub" element={<Hub />} />
-          <Route path="areas" element={<PlaceholderPage title="Service Areas" />} />
-          <Route path="contact" element={<Contact />} />
-          <Route path="resources" element={<Resources />} />
-          <Route path="countries" element={<PlaceholderPage title="Recognised Countries" />} />
-          <Route path="faq" element={<FAQ />} />
-          <Route path="testimonials" element={<Testimonials />} />
-          <Route path="find-instructor" element={<FindInstructor />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <Toaster position="top-center" />
+        <ScrollToTop />
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            {/* Public pages */}
+            <Route index element={<Home />} />
+            <Route path="pricing" element={<Pricing />} />
+            <Route path="packages" element={<Packages />} />
+            <Route path="overseas" element={<Overseas />} />
+            <Route path="hub" element={<Hub />} />
+            <Route path="areas" element={<PlaceholderPage title="Service Areas" />} />
+            <Route path="contact" element={<Contact />} />
+            <Route path="resources" element={<Resources />} />
+            <Route path="countries" element={<PlaceholderPage title="Recognised Countries" />} />
+            <Route path="faq" element={<FAQ />} />
+            <Route path="testimonials" element={<Testimonials />} />
+            <Route path="find-instructor" element={<FindInstructor />} />
 
-          {/* Auth pages */}
-          <Route path="login" element={<Auth defaultIsLogin={true} />} />
-          <Route path="signup" element={<Auth defaultIsLogin={false} />} />
-          <Route path="instructor-register" element={<InstructorRegistration />} />
-          <Route path="forgot-password" element={<ForgotPassword />} />
-          <Route path="reset-password" element={<ResetPassword />} />
+            {/* Auth pages */}
+            <Route path="login" element={<Auth defaultIsLogin={true} />} />
+            <Route path="signup" element={<Auth defaultIsLogin={false} />} />
+            <Route path="instructor-register" element={<InstructorRegistration />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
 
-          {/* Protected: Any authenticated user */}
-          <Route path="book" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
-          <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="assignments" element={<ProtectedRoute><Assignments /></ProtectedRoute>} />
-          <Route path="documents" element={<ProtectedRoute roles={['learner', 'admin']}><Documents /></ProtectedRoute>} />
+            {/* Protected: Any authenticated user */}
+            <Route path="book" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
+            <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="assignments" element={<ProtectedRoute><Assignments /></ProtectedRoute>} />
+            <Route path="documents" element={<ProtectedRoute roles={['learner', 'admin']}><Documents /></ProtectedRoute>} />
 
-          {/* Protected: Learner */}
-          <Route path="learner-dashboard" element={<ProtectedRoute roles={['learner', 'admin']}><LearnerDashboard /></ProtectedRoute>} />
+            {/* Protected: Learner */}
+            <Route path="learner-dashboard" element={<ProtectedRoute roles={['learner', 'admin']}><LearnerDashboard /></ProtectedRoute>} />
 
-          {/* Protected: Instructor */}
-          <Route path="instructor-dashboard" element={<ProtectedRoute roles={['instructor', 'admin']}><InstructorDashboard /></ProtectedRoute>} />
+            {/* Protected: Instructor */}
+            <Route path="instructor-dashboard" element={<ProtectedRoute roles={['instructor', 'admin']}><InstructorDashboard /></ProtectedRoute>} />
 
-          {/* Protected: Instructor + Learner + Admin */}
-          <Route path="training-requests" element={<ProtectedRoute><TrainingRequests /></ProtectedRoute>} />
-          <Route path="transfer-requests" element={<ProtectedRoute><TransferRequests /></ProtectedRoute>} />
+            {/* Protected: Instructor + Learner + Admin */}
+            <Route path="training-requests" element={<ProtectedRoute><TrainingRequests /></ProtectedRoute>} />
+            <Route path="transfer-requests" element={<ProtectedRoute><TransferRequests /></ProtectedRoute>} />
 
-          {/* Protected: Admin only */}
-          <Route path="admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
-          <Route path="admin/users/:id" element={<ProtectedRoute roles={['admin']}><AdminUserDetails /></ProtectedRoute>} />
+            {/* Protected: Admin only */}
+            <Route path="admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="admin/users/:id" element={<ProtectedRoute roles={['admin']}><AdminUserDetails /></ProtectedRoute>} />
 
-          {/* 404 */}
-          <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
-        </Route>
-      </Routes>
-    </AuthProvider>
+            {/* 404 */}
+            <Route path="*" element={<PlaceholderPage title="404 - Page Not Found" />} />
+          </Route>
+        </Routes>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

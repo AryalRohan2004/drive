@@ -239,7 +239,7 @@ const Home = () => {
         <AnimatedSection className="container">
           <div className="text-center" style={{ marginBottom: '4rem' }}>
             <span className="text-sm font-medium" style={{ color: '#DC2626', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem' }}>Testimonials</span>
-            <h2 className="h2" style={{ color: '#1E3A8A', fontSize: '3rem' }}>What our students say</h2>
+            <h2 className="h2" style={{ color: 'var(--primary-blue)', fontSize: '3rem' }}>What our students say</h2>
           </div>
           
           <div className="testimonials-grid">
@@ -265,10 +265,22 @@ const Home = () => {
 
       {/* CTA Section */}
       <section className="section bg-white border-top">
-        <AnimatedSection className="container text-center" style={{ padding: '6rem 0' }}>
-          <h2 className="h2" style={{ marginBottom: '1rem' }}>Ready to Start Your Journey?</h2>
-          <p className="text-lg text-muted" style={{ marginBottom: '2.5rem', maxWidth: '600px', margin: '1rem auto 2.5rem' }}>Book your first lesson today and take the first step towards driving independence.</p>
-          <Link to="/book" className="btn btn-primary" style={{ padding: '1rem 2.5rem', fontSize: '1.125rem' }}>Book Online Now</Link>
+        <AnimatedSection className="container" style={{ padding: '6rem 0' }}>
+          <div className="cta-grid">
+            <div className="cta-content">
+              <h2 className="h2" style={{ marginBottom: '1rem', fontSize: '2.8rem' }}>Ready to Start Your Journey?</h2>
+              <p className="text-lg text-muted" style={{ marginBottom: '2.5rem', maxWidth: '600px', fontSize: '1.125rem' }}>
+                Book your first lesson today and take the first step towards driving independence. Learn in a safe, modern vehicle with Adelaide's most trusted instructors.
+              </p>
+              <Link to="/book" className="btn btn-primary" style={{ padding: '1rem 2.5rem', fontSize: '1.125rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                Book Online Now <ArrowRight size={20} />
+              </Link>
+            </div>
+            <div className="cta-image-wrapper">
+              <img src="/hero_lesson.png" alt="Student driving" className="cta-image" />
+              <div className="cta-image-overlay"></div>
+            </div>
+          </div>
         </AnimatedSection>
       </section>
     </div>

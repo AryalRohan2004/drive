@@ -47,7 +47,7 @@ const Packages = () => {
             </div>
 
             {/* Package 2 - Recommended */}
-            <div className="package-card" style={{ borderColor: 'var(--primary-blue)', transform: 'translateY(-8px)', boxShadow: 'var(--shadow-xl)' }}>
+            <div className="package-card recommended">
               <div className="package-header" style={{ background: 'var(--primary-blue)', color: 'var(--white)' }}>
                 <span className="package-badge badge-green" style={{ background: 'var(--white)' }}>Highly Recommended</span>
                 <h3 className="h3" style={{ color: 'var(--white)' }}>Complete Learner</h3>
