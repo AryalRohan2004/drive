@@ -17,6 +17,7 @@ import transferRequests from './transferRequests.js';
 import matching from './matching.js';
 import auditLogs from './auditLogs.js';
 import payments from './payments.js';
+import upload from './upload.js';
 
 const router = Router();
 
@@ -38,5 +39,6 @@ router.use('/transfer-requests', transferRequests);
 router.use('/matching', matching);
 router.use('/audit-logs', auditLogs);
 router.use('/payments', payments);
+router.use('/upload', upload);
 
 export default router;

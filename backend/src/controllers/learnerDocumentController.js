@@ -14,6 +14,7 @@ const schema = z.object({
 export const createLearnerDocument = asyncHandler(async (req, res) => {
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) throw new AppError(parsed.error.issues[0]?.message || 'Invalid document payload', 400);
+  
   const result = await query(
     `INSERT INTO learner_documents (id, student_id, document_type, file_url, status)
      VALUES ($1,$2,$3,$4,$5) RETURNING *`,

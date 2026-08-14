@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Upload, CheckCircle, XCircle, Clock, Loader, AlertCircle, Eye } from 'lucide-react';
-import { learnerDocumentsApi } from '../services/api';
+import { learnerDocumentsApi, uploadApi, getMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import './Documents.css';
@@ -11,7 +11,7 @@ const Documents = () => {
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [uploadData, setUploadData] = useState({ documentType: '', fileUrl: '' });
+  const [uploadData, setUploadData] = useState({ documentType: '', file: null });
   const [actionLoading, setActionLoading] = useState(null);
   const [verifyData, setVerifyData] = useState({ status: 'verified', rejectionReason: '' });
 
@@ -33,9 +33,17 @@ const Documents = () => {
     e.preventDefault();
     setUploading(true);
     try {
-      const res = await learnerDocumentsApi.create(uploadData);
+      let fileUrl = '';
+      if (uploadData.file) {
+        const uploadRes = await uploadApi.uploadFile(uploadData.file);
+        fileUrl = uploadRes.url;
+      }
+      const res = await learnerDocumentsApi.create({
+        documentType: uploadData.documentType,
+        fileUrl
+      });
       setDocuments(prev => [...prev, res.document || res]);
-      setUploadData({ documentType: '', fileUrl: '' });
+      setUploadData({ documentType: '', file: null });
       setShowUpload(false);
       toast.success('Document uploaded successfully!');
     } catch (err) {
@@ -109,8 +117,8 @@ const Documents = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label>File URL <span className="text-muted text-sm">(paste link to uploaded file)</span></label>
-                <input type="url" value={uploadData.fileUrl} onChange={(e) => setUploadData({ ...uploadData, fileUrl: e.target.value })} placeholder="https://..." required />
+                <label>Upload Document File</label>
+                <input type="file" onChange={(e) => setUploadData({ ...uploadData, file: e.target.files[0] })} required />
               </div>
               <button type="submit" className="btn btn-primary" disabled={uploading}>
                 {uploading ? <><Loader size={18} className="spin-icon" /> Uploading...</> : <><Upload size={16} /> Upload</>}
@@ -137,7 +145,7 @@ const Documents = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   {doc.fileUrl && (
-                    <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}>
+                    <a href={getMediaUrl(doc.fileUrl)} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}>
                       <Eye size={14} /> View
                     </a>
                   )}

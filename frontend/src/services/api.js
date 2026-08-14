@@ -19,10 +19,12 @@ export function clearToken() {
 async function request(endpoint, options = {}) {
   const { body, method = 'GET', headers = {}, auth = true } = options;
 
+  const isFormData = body instanceof FormData;
+
   const config = {
     method,
     headers: {
-      'Content-Type': 'application/json',
+      ...(!isFormData && { 'Content-Type': 'application/json' }),
       ...headers,
     },
   };
@@ -35,7 +37,7 @@ async function request(endpoint, options = {}) {
   }
 
   if (body) {
-    config.body = JSON.stringify(body);
+    config.body = isFormData ? body : JSON.stringify(body);
   }
 
   const res = await fetch(`${API_BASE}${endpoint}`, config);
@@ -57,6 +59,21 @@ async function request(endpoint, options = {}) {
 
   return data;
 }
+
+export function getMediaUrl(path) {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  const baseUrl = API_BASE.replace('/api', '');
+  return `${baseUrl}${path}`;
+}
+
+export const uploadApi = {
+  uploadFile: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request('/upload', { method: 'POST', body: formData });
+  }
+};
 
 // ─── Auth ───────────────────────────────────────────────
 export const authApi = {

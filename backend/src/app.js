@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -11,7 +12,9 @@ import { openApiSpec } from './docs/openapi.js';
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 app.use(
   cors({
     origin: env.corsOrigin,
@@ -22,6 +25,8 @@ app.use(
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
 app.use(express.json({ limit: '1mb' }));
+// Serve the media directory statically
+app.use('/media', express.static(path.join(process.cwd(), 'media')));
 app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
 
 app.use(

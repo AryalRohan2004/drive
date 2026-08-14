@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Upload, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { uploadApi } from '../services/api';
 import './InstructorRegistration.css';
 
 const STEPS = [
@@ -231,15 +232,12 @@ const InstructorRegistration = () => {
       setFormData(prev => ({ ...prev, [name]: null }));
       return;
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setFormData(prev => ({
-        ...prev,
-        [name]: reader.result
-      }));
-    };
-    reader.readAsDataURL(file);
+    
+    // Store the actual file object for uploading later
+    setFormData(prev => ({
+      ...prev,
+      [name]: file
+    }));
   };
 
   const handleBlur = (e) => {
@@ -291,6 +289,18 @@ const InstructorRegistration = () => {
     if (!validateCurrentStep()) return;
     setLoading(true);
     try {
+      let profilePhotoUrl = formData.profilePhoto;
+      let vehiclePhotoUrl = formData.vehiclePhoto;
+      
+      if (formData.profilePhoto instanceof File) {
+        const res = await uploadApi.uploadFile(formData.profilePhoto);
+        profilePhotoUrl = res.url;
+      }
+      if (formData.vehiclePhoto instanceof File) {
+        const res = await uploadApi.uploadFile(formData.vehiclePhoto);
+        vehiclePhotoUrl = res.url;
+      }
+
       const payload = {
         ...formData,
         phone: formData.mobile,
@@ -301,8 +311,8 @@ const InstructorRegistration = () => {
         agreedTerms: formData.agreeTerms,
         agreedCancellation: formData.agreeCancellation,
         testimonialsText: formData.testimonials,
-        profilePhotoUrl: formData.profilePhoto,
-        vehiclePhotoUrl: formData.vehiclePhoto,
+        profilePhotoUrl,
+        vehiclePhotoUrl,
       };
 
       await register({
