@@ -72,6 +72,11 @@ export const uploadApi = {
     const formData = new FormData();
     formData.append('file', file);
     return request('/upload', { method: 'POST', body: formData });
+  },
+  uploadPublicFile: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request('/upload/public', { method: 'POST', body: formData, auth: false });
   }
 };
 

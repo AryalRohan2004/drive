@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Save, Loader, AlertCircle, CheckCircle, MapPin, Phone, Mail, Car, Shield, ArrowLeft } from 'lucide-react';
-import { usersApi } from '../services/api';
+import { usersApi, getMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import './Profile.css';
@@ -85,7 +85,11 @@ const Profile = () => {
         </button>
         <div className="profile-header">
           <div className="profile-avatar">
-            <User size={40} />
+            {formData.profilePhotoUrl ? (
+              <img src={getMediaUrl(formData.profilePhotoUrl)} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+            ) : (
+              <User size={40} />
+            )}
           </div>
           <div>
             <h1 className="h2">{formData.fullName || 'Your Profile'}</h1>

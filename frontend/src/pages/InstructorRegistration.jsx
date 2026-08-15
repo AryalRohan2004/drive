@@ -293,11 +293,11 @@ const InstructorRegistration = () => {
       let vehiclePhotoUrl = formData.vehiclePhoto;
       
       if (formData.profilePhoto instanceof File) {
-        const res = await uploadApi.uploadFile(formData.profilePhoto);
+        const res = await uploadApi.uploadPublicFile(formData.profilePhoto);
         profilePhotoUrl = res.url;
       }
       if (formData.vehiclePhoto instanceof File) {
-        const res = await uploadApi.uploadFile(formData.vehiclePhoto);
+        const res = await uploadApi.uploadPublicFile(formData.vehiclePhoto);
         vehiclePhotoUrl = res.url;
       }
 
@@ -400,10 +400,13 @@ const InstructorRegistration = () => {
                     <label>Profile Photo</label>
                     <div className="file-upload-box">
                       <label htmlFor="profilePhoto" style={{ cursor: 'pointer', margin: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <Upload size={32} className="text-muted mb-2" />
-                        <span>Click to upload your profile photo</span>
-                        <input type="file" id="profilePhoto" name="profilePhoto" accept="image/*" onChange={handleFileChange} />
-                        {formData.profilePhoto && <span className="upload-success">Profile photo selected</span>}
+                        {formData.profilePhoto ? (
+                          <img src={URL.createObjectURL(formData.profilePhoto)} alt="Profile Preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '50%', marginBottom: '10px' }} />
+                        ) : (
+                          <Upload size={32} className="text-muted mb-2" />
+                        )}
+                        <span>{formData.profilePhoto ? 'Click to change profile photo' : 'Click to upload your profile photo'}</span>
+                        <input type="file" id="profilePhoto" name="profilePhoto" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                       </label>
                     </div>
                   </div>
@@ -529,10 +532,13 @@ const InstructorRegistration = () => {
                     <label>Vehicle Photo</label>
                     <div className="file-upload-box">
                       <label htmlFor="vehiclePhoto" style={{ cursor: 'pointer', margin: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <Upload size={32} className="text-muted mb-2" />
-                        <span>Click to upload a photo of your vehicle</span>
-                        <input type="file" id="vehiclePhoto" name="vehiclePhoto" accept="image/*" onChange={handleFileChange} />
-                        {formData.vehiclePhoto && <span className="upload-success">Vehicle photo selected</span>}
+                        {formData.vehiclePhoto ? (
+                          <img src={URL.createObjectURL(formData.vehiclePhoto)} alt="Vehicle Preview" style={{ width: '160px', height: '100px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' }} />
+                        ) : (
+                          <Upload size={32} className="text-muted mb-2" />
+                        )}
+                        <span>{formData.vehiclePhoto ? 'Click to change vehicle photo' : 'Click to upload a photo of your vehicle'}</span>
+                        <input type="file" id="vehiclePhoto" name="vehiclePhoto" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                       </label>
                     </div>
                   </div>
