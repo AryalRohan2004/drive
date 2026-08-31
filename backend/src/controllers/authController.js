@@ -19,45 +19,45 @@ const registerSchema = z.object({
   fullName: z.string().min(2).max(60).regex(nameRegex, 'Use letters only, with spaces or basic punctuation.'),
   email: z.string().email(),
   password: z.string().min(8).max(32).regex(passwordRegex, 'Password must include at least one letter and one number.'),
-  phone: z.string().trim().regex(mobileRegex, 'Enter a valid phone number with 8 to 15 digits.').optional().nullable(),
+  phone: z.string().trim().regex(mobileRegex, 'Enter a valid phone number with 8 to 15 digits.').optional().nullable().or(z.literal('')),
   role: z.enum(['learner', 'instructor']).default('learner'),
-  languages: z.string().trim().min(2).max(80).optional().nullable(),
-  bio: z.string().trim().min(20).max(500).optional().nullable(),
-  accreditationNo: z.string().trim().min(4).max(30).optional().nullable(),
-  licenseNo: z.string().trim().min(5).max(30).optional().nullable(),
-  licenseExpiry: z.string().trim().optional().nullable(),
-  suburbsCovered: z.string().trim().min(3).max(120).optional().nullable(),
-  daysAvailable: z.string().trim().min(3).max(60).optional().nullable(),
-  timesAvailable: z.string().trim().min(3).max(60).optional().nullable(),
-  pickupLocations: z.string().trim().min(3).max(120).optional().nullable(),
-  vehicleMakeModel: z.string().trim().min(2).max(60).optional().nullable(),
-  vehicleTransmission: z.string().trim().optional().nullable(),
+  languages: z.string().trim().min(2).max(80).optional().nullable().or(z.literal('')),
+  bio: z.string().trim().min(20).max(500).optional().nullable().or(z.literal('')),
+  accreditationNo: z.string().trim().min(4).max(30).optional().nullable().or(z.literal('')),
+  licenseNo: z.string().trim().min(5).max(30).optional().nullable().or(z.literal('')),
+  licenseExpiry: z.string().trim().optional().nullable().or(z.literal('')),
+  suburbsCovered: z.string().trim().min(3).max(120).optional().nullable().or(z.literal('')),
+  daysAvailable: z.string().trim().min(3).max(60).optional().nullable().or(z.literal('')),
+  timesAvailable: z.string().trim().min(3).max(60).optional().nullable().or(z.literal('')),
+  pickupLocations: z.string().trim().min(3).max(120).optional().nullable().or(z.literal('')),
+  vehicleMakeModel: z.string().trim().min(2).max(60).optional().nullable().or(z.literal('')),
+  vehicleTransmission: z.string().trim().optional().nullable().or(z.literal('')),
   price1Hr: z.union([z.coerce.number().gt(0).lte(1000), z.literal('')]).optional().nullable(),
   price2Hr: z.union([z.coerce.number().gt(0).lte(1000), z.literal('')]).optional().nullable(),
   priceTestPackage: z.union([z.coerce.number().gt(0).lte(1000), z.literal('')]).optional().nullable(),
-  specialPackages: z.string().trim().max(120).optional().nullable(),
-  bankDetails: z.string().trim().min(6).max(120).optional().nullable(),
-  abn: z.string().trim().regex(abnRegex, 'Enter a valid 11-digit ABN.').optional().nullable(),
+  specialPackages: z.string().trim().max(120).optional().nullable().or(z.literal('')),
+  bankDetails: z.string().trim().min(6).max(120).optional().nullable().or(z.literal('')),
+  abn: z.string().trim().regex(abnRegex, 'Enter a valid 11-digit ABN.').optional().nullable().or(z.literal('')),
   yearsExperience: z.union([z.coerce.number().int().min(0).max(80), z.literal('')]).optional().nullable(),
   studentsTaught: z.union([z.coerce.number().int().min(0).max(100000), z.literal('')]).optional().nullable(),
-  testimonials: z.string().trim().max(1000).optional().nullable(),
-  socialLinks: z.string().trim().regex(urlRegex, 'Enter a valid social profile link.').optional().nullable(),
+  testimonials: z.string().trim().max(1000).optional().nullable().or(z.literal('')),
+  socialLinks: z.string().trim().regex(urlRegex, 'Enter a valid social profile link.').optional().nullable().or(z.literal('')),
   agreeCommission: z.boolean().refine(Boolean, 'Please accept the platform commission fee.').optional(),
   agreeTerms: z.boolean().refine(Boolean, 'Please accept the instructor terms and conditions.').optional(),
   agreeCancellation: z.boolean().refine(Boolean, 'Please accept the cancellation policy.').optional(),
   // legacy fields still accepted
-  transmissionPreference: z.string().optional().nullable(),
-  preferredVehicleType: z.string().optional().nullable(),
-  pickupSuburb: z.string().optional().nullable(),
-  pickupAddress: z.string().optional().nullable(),
+  transmissionPreference: z.string().optional().nullable().or(z.literal('')),
+  preferredVehicleType: z.string().optional().nullable().or(z.literal('')),
+  pickupSuburb: z.string().optional().nullable().or(z.literal('')),
+  pickupAddress: z.string().optional().nullable().or(z.literal('')),
   pickupLatitude: z.coerce.number().optional().nullable(),
   pickupLongitude: z.coerce.number().optional().nullable(),
-  emergencyContactName: z.string().optional().nullable(),
-  emergencyContactPhone: z.string().optional().nullable(),
+  emergencyContactName: z.string().optional().nullable().or(z.literal('')),
+  emergencyContactPhone: z.string().optional().nullable().or(z.literal('')),
   preferredLessonTimes: z.array(z.any()).optional(),
-  specialRequirements: z.string().optional().nullable(),
+  specialRequirements: z.string().optional().nullable().or(z.literal('')),
   vehicleTypesSupported: z.array(z.string()).optional(),
-  baseAddress: z.string().optional().nullable(),
+  baseAddress: z.string().optional().nullable().or(z.literal('')),
   baseLatitude: z.coerce.number().optional().nullable(),
   baseLongitude: z.coerce.number().optional().nullable(),
   serviceRadiusKm: z.coerce.number().int().min(0).optional(),
@@ -133,7 +133,9 @@ const signToken = (userId, role) =>
 export const register = asyncHandler(async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
-    throw new AppError(parsed.error.issues[0]?.message || 'Invalid registration payload', 400);
+    const issue = parsed.error.issues[0];
+    const msg = issue?.path?.length ? `${issue.path.join('.')}: ${issue.message}` : (issue?.message || 'Invalid registration payload');
+    throw new AppError(msg, 400);
   }
 
   const {
@@ -193,10 +195,6 @@ export const register = asyncHandler(async (req, res) => {
     vehiclePhotoUrl,
     testimonialsText,
   } = req.body; // use raw req.body for optional fields to avoid huge schema change for now
-
-  if (!parsed.success) {
-    throw new AppError(parsed.error.issues[0]?.message || 'Invalid registration payload', 400);
-  }
 
   const existing = await query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
   if (existing.rowCount > 0) {
@@ -296,7 +294,9 @@ export const register = asyncHandler(async (req, res) => {
 export const login = asyncHandler(async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
-    throw new AppError(parsed.error.issues[0]?.message || 'Invalid login payload', 400);
+    const issue = parsed.error.issues[0];
+    const msg = issue?.path?.length ? `${issue.path.join('.')}: ${issue.message}` : (issue?.message || 'Invalid login payload');
+    throw new AppError(msg, 400);
   }
 
   const { email, password } = parsed.data;
@@ -336,7 +336,9 @@ export const me = asyncHandler(async (req, res) => {
 export const forgotPassword = asyncHandler(async (req, res) => {
   const parsed = forgotSchema.safeParse(req.body);
   if (!parsed.success) {
-    throw new AppError(parsed.error.issues[0]?.message || 'Invalid email', 400);
+    const issue = parsed.error.issues[0];
+    const msg = issue?.path?.length ? `${issue.path.join('.')}: ${issue.message}` : (issue?.message || 'Invalid email');
+    throw new AppError(msg, 400);
   }
 
   const { email } = parsed.data;
@@ -374,7 +376,9 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 export const resetPassword = asyncHandler(async (req, res) => {
   const parsed = resetSchema.safeParse(req.body);
   if (!parsed.success) {
-    throw new AppError(parsed.error.issues[0]?.message || 'Invalid reset payload', 400);
+    const issue = parsed.error.issues[0];
+    const msg = issue?.path?.length ? `${issue.path.join('.')}: ${issue.message}` : (issue?.message || 'Invalid reset payload');
+    throw new AppError(msg, 400);
   }
 
   const { token, password } = parsed.data;
