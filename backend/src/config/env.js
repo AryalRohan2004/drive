@@ -25,10 +25,10 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
-  corsOrigin:
-    process.env.CORS_ORIGIN ||
-    process.env.FRONTEND_URL ||
-    "http://localhost:5173",
+  corsOrigin: (() => {
+    const originStr = process.env.CORS_ORIGIN || process.env.FRONTEND_URL || "http://localhost:5173";
+    return originStr.includes(',') ? originStr.split(',').map(s => s.trim()) : originStr;
+  })(),
   smtpHost: process.env.SMTP_HOST || "",
   smtpPort: Number(process.env.SMTP_PORT || 587),
   smtpUser: process.env.SMTP_USER || "",
